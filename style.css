@@ -1,0 +1,41 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #080d25;
+    color: white;
+}
+
+h1 {
+    text-align: center;
+    color: #a78bfa;
+    margin-top: 30px;
+}
+
+p {
+    text-align: center;
+    color: #ccccdd;
+}
+
+input {
+    width: 75%;
+    padding: 15px;
+    border: 1px solid #8b5cf6;
+    border-radius: 25px;
+    background: #171d3b;
+    color: white;
+    font-size: 16px;
+}
+
+button {
+    padding: 15px;
+    border: none;
+    border-radius: 25px;
+    background: #7138ff;
+    color: white;
+    cursor: pointer;
+}
