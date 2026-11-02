@@ -1,23 +1,52 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My AI Chatbot</title>
+
+    <title>K-ULTRA AI</title>
 
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
+
 <body>
 
-    <h1>🤖 My AI Chatbot</h1>
+    <header>
+        <h1>⚡ K-ULTRA AI</h1>
+        <p>Your Next Generation AI Assistant</p>
+    </header>
 
-    <p>Hello! Welcome to my AI Chatbot.</p>
+    <main id="chatbox">
 
-    <div>
-        <input type="text" placeholder="Type your message...">
-        <button>Send</button>
+        <div class="bot-message">
+            🤖 Hello! Welcome to K-ULTRA AI.
+            <br><br>
+            I am your intelligent AI assistant.
+            Ask me anything!
+        </div>
+
+    </main>
+
+    <div class="chat-input">
+
+        <input
+            type="text"
+            id="userInput"
+            placeholder="Ask K-ULTRA AI anything..."
+            autocomplete="off"
+        >
+
+        <button id="sendBtn" type="button">
+            Send ➤
+        </button>
+
     </div>
+
+    <footer>
+        <p>Powered by K-ULTRA AI 🚀</p>
+    </footer>
 
 </body>
 </html>
