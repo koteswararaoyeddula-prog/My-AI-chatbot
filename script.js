@@ -3,50 +3,69 @@ const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chatbox");
 
+const API_URL = "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
+
 function addMessage(message, sender) {
-    const bubble = document.createElement("div");
+  const bubble = document.createElement("div");
+  bubble.className = sender + "-message";
+  bubble.textContent = message;
+  bubble.style.padding = "14px";
+  bubble.style.margin = "12px 0";
+  bubble.style.borderRadius = "15px";
+  bubble.style.maxWidth = "85%";
+  bubble.style.whiteSpace = "pre-wrap";
 
-    bubble.className = sender + "-message";
-    bubble.textContent = message;
+  if (sender === "user") {
+    bubble.style.background = "#343078";
+    bubble.style.marginLeft = "auto";
+  } else {
+    bubble.style.background = "#183451";
+    bubble.style.marginRight = "auto";
+  }
 
-    bubble.style.padding = "14px";
-    bubble.style.margin = "12px 0";
-    bubble.style.borderRadius = "15px";
-    bubble.style.maxWidth = "85%";
-    bubble.style.whiteSpace = "pre-wrap";
-
-    if (sender === "user") {
-        bubble.style.background = "#343078";
-        bubble.style.marginLeft = "auto";
-    } else {
-        bubble.style.background = "#183451";
-        bubble.style.marginRight = "auto";
-    }
-
-    chat.appendChild(bubble);
-    chat.scrollTop = chat.scrollHeight;
+  chat.appendChild(bubble);
+  chat.scrollTop = chat.scrollHeight;
+  return bubble;
 }
 
-function sendMessage() {
-    const message = input.value.trim();
+async function sendMessage() {
+  const message = input.value.trim();
+  if (!message) return;
 
-    if (message === "") return;
+  addMessage(message, "user");
+  input.value = "";
+  button.disabled = true;
 
-    addMessage(message, "user");
+  const loading = addMessage("K-ULTRA AI is thinking... 🤖", "bot");
 
-    addMessage(
-        "Welcome to K-ULTRA AI! 🤖 Your message has been received. My AI Brain will be connected soon!",
-        "bot"
-    );
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message })
+    });
 
-    input.value = "";
-    input.focus();
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Something went wrong");
+    }
+
+    loading.textContent = data.reply || "No reply received.";
+  } catch (error) {
+    loading.textContent = "Error: " + error.message;
+  }
+
+  button.disabled = false;
+  input.focus();
 }
 
 button.addEventListener("click", sendMessage);
 
 input.addEventListener("keydown", function(event) {
-    if (event.key === "Enter") {
-        sendMessage();
-    }
+  if (event.key === "Enter") {
+    sendMessage();
+  }
 });
