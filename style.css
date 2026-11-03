@@ -223,3 +223,70 @@ body {
   }
 }
 
+/* K-ULTRA AI - White + Dark Theme */
+
+body {
+  background: #f1f2f6;
+  color: #202333;
+}
+
+.app {
+  background: #ffffff;
+  color: #202333;
+  border: 1px solid #e2e4ed;
+}
+
+.header {
+  background: #151725;
+  color: #ffffff;
+}
+
+.brand h2,
+.brand p {
+  color: #ffffff;
+}
+
+.main {
+  background: #ffffff;
+}
+
+.welcome h1,
+.welcome h2,
+.welcome p {
+  color: #202333;
+}
+
+.welcome .telugu {
+  color: #7138ff;
+}
+
+.suggestions button {
+  background: #f1efff;
+  color: #4422a8;
+  border: 1px solid #d8ceff;
+}
+
+.composer {
+  background: #151725;
+  border: 1px solid #292d43;
+}
+
+.composer input {
+  background: #ffffff;
+  color: #202333;
+}
+
+.composer input::placeholder {
+  color: #777b8b;
+}
+
+.composer button {
+  background: #7138ff;
+  color: #ffffff;
+}
+
+.footer-note {
+  color: #777b8b;
+}
+
+
