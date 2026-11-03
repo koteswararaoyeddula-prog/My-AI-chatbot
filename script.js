@@ -5,7 +5,7 @@ const chat = document.getElementById("chatbox");
 
 const API_URL = "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
 
-function addMessage(message, sender) {
+function addMessage(message, sender, save = true) {
   const bubble = document.createElement("div");
   bubble.className = sender + "-message";
   bubble.textContent = message;
@@ -24,9 +24,25 @@ function addMessage(message, sender) {
   }
 
   chat.appendChild(bubble);
+  if(save){
+  const history = JSON.parse(localStorage.getItem("kUltraChatHistory") || "[]");
+history.push({ message, sender });
+localStorage.setItem("kUltraChatHistory", JSON.stringify(history));
+  }
   chat.scrollTop = chat.scrollHeight;
   return bubble;
 }
+function loadChatHistory() {
+  const history = JSON.parse(
+    localStorage.getItem("kUltraChatHistory") || "[]"
+  );
+
+  history.forEach(item => {
+    addMessage(item.message, item.sender, false);
+  });
+}
+
+loadChatHistory();
 
 async function sendMessage() {
   const message = input.value.trim();
