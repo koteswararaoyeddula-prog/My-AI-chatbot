@@ -241,3 +241,4 @@ if (
 saveConversations();
 renderChat();
 renderChatList();
+window.createNewChat = createConversation;
