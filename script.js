@@ -303,7 +303,7 @@ if (micBtn) {
 
 function speakReply(message) {
   if (!("speechSynthesis" in window)) {
-    alert("Voice output is not supported in this browser.");
+    alert("Voice not supported.");
     return;
   }
 
@@ -311,7 +311,6 @@ function speakReply(message) {
 
   const speech = new SpeechSynthesisUtterance(message);
 
-  // Telugu or English voice
   speech.lang = /[\u0C00-\u0C7F]/.test(message)
     ? "te-IN"
     : "en-IN";
@@ -322,5 +321,3 @@ function speakReply(message) {
 
   window.speechSynthesis.speak(speech);
 }
-
-
