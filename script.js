@@ -43,6 +43,29 @@ function loadChatHistory() {
 }
 
 loadChatHistory();
+const newChatBtn = document.getElementById("newChatBtn");
+
+newChatBtn.addEventListener("click", function() {
+  const currentHistory = JSON.parse(
+    localStorage.getItem("kUltraChatHistory") || "[]"
+  );
+
+  if (currentHistory.length > 0) {
+    const savedChats = JSON.parse(
+      localStorage.getItem("kUltraSavedChats") || "[]"
+    );
+
+    savedChats.push({
+      date: new Date().toLocaleString(),
+      messages: currentHistory
+    });
+
+    localStorage.setItem("kUltraSavedChats", JSON.stringify(savedChats));
+  }
+
+  localStorage.removeItem("kUltraChatHistory");
+  chat.innerHTML = "";
+});
 
 async function sendMessage() {
   const message = input.value.trim();
