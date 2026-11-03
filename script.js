@@ -129,7 +129,7 @@ function addMessage(message, sender) {
     speaker.style.cursor = "pointer";
 
     speaker.addEventListener("click", () => {
-      speakReply(bubble.textContent);
+      speakReply(bubble.textContent, speaker);
     });
 
     chat.appendChild(speaker);
