@@ -301,9 +301,11 @@ if (micBtn) {
   });
 }
 
-function speakReply(message) {
-  if (!("speechSynthesis" in window)) {
-    alert("Voice not supported.");
+function speakReply(message, speaker) {
+  if (speaker.dataset.playing === "yes") {
+    window.speechSynthesis.cancel();
+    speaker.dataset.playing = "no";
+    speaker.textContent = "🔊";
     return;
   }
 
@@ -312,12 +314,18 @@ function speakReply(message) {
   const speech = new SpeechSynthesisUtterance(message);
 
   speech.lang = /[\u0C00-\u0C7F]/.test(message)
-    ? "te-IN"
-    : "en-IN";
+    ? "te-IN" : "en-IN";
 
   speech.rate = 1;
   speech.pitch = 1;
-  speech.volume = 1;
+
+  speaker.dataset.playing = "yes";
+  speaker.textContent = "⏹️";
+
+  speech.onend = () => {
+    speaker.dataset.playing = "no";
+    speaker.textContent = "🔊";
+  };
 
   window.speechSynthesis.speak(speech);
 }
