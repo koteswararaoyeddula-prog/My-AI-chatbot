@@ -200,6 +200,7 @@ async function sendMessage() {
     const reply = data.reply || "No reply received.";
 
     loading.textContent = reply;
+    speakReply(reply);
     saveMessage(reply, "bot");
 
   } catch (error) {
@@ -281,4 +282,27 @@ if (micBtn) {
     recognition.start();
   });
 }
+
+function speakReply(message) {
+  if (!("speechSynthesis" in window)) {
+    alert("Voice output is not supported in this browser.");
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(message);
+
+  // Telugu or English voice
+  speech.lang = /[\u0C00-\u0C7F]/.test(message)
+    ? "te-IN"
+    : "en-IN";
+
+  speech.rate = 1;
+  speech.pitch = 1;
+  speech.volume = 1;
+
+  window.speechSynthesis.speak(speech);
+}
+
 
