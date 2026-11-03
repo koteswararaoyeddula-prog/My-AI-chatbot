@@ -309,7 +309,7 @@ function speakReply(message, speaker) {
     return;
   }
 
-  window.speechSynthesis.cancel();
+  
 
   const speech = new SpeechSynthesisUtterance(message);
 
