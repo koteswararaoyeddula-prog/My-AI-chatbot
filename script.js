@@ -1,7 +1,7 @@
 
 const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
-const chat = document.getElementById("chatbox");
+const chat = document.getElementById("chat");
 
 const API_URL = "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
 
@@ -9,6 +9,7 @@ function addMessage(message, sender, save = true) {
   const bubble = document.createElement("div");
   bubble.className = sender + "-message";
   bubble.textContent = message;
+
   bubble.style.padding = "14px";
   bubble.style.margin = "12px 0";
   bubble.style.borderRadius = "15px";
@@ -24,14 +25,23 @@ function addMessage(message, sender, save = true) {
   }
 
   chat.appendChild(bubble);
-  if(save){
-  const history = JSON.parse(localStorage.getItem("kUltraChatHistory") || "[]");
-history.push({ message, sender });
-localStorage.setItem("kUltraChatHistory", JSON.stringify(history));
+
+  if (save) {
+    const history = JSON.parse(
+      localStorage.getItem("kUltraChatHistory") || "[]"
+    );
+
+    history.push({ message, sender });
+
+    localStorage.setItem(
+      "kUltraChatHistory",
+      JSON.stringify(history)
+    );
   }
-  chat.scrollTop = chat.scrollHeight;
+
   return bubble;
 }
+
 function loadChatHistory() {
   const history = JSON.parse(
     localStorage.getItem("kUltraChatHistory") || "[]"
@@ -43,39 +53,20 @@ function loadChatHistory() {
 }
 
 loadChatHistory();
-const newChatBtn = document.getElementById("newChatBtn");
-
-newChatBtn.addEventListener("click", function() {
-  const currentHistory = JSON.parse(
-    localStorage.getItem("kUltraChatHistory") || "[]"
-  );
-
-  if (currentHistory.length > 0) {
-    const savedChats = JSON.parse(
-      localStorage.getItem("kUltraSavedChats") || "[]"
-    );
-
-    savedChats.push({
-      date: new Date().toLocaleString(),
-      messages: currentHistory
-    });
-
-    localStorage.setItem("kUltraSavedChats", JSON.stringify(savedChats));
-  }
-
-  localStorage.removeItem("kUltraChatHistory");
-  chat.innerHTML = "";
-});
 
 async function sendMessage() {
   const message = input.value.trim();
+
   if (!message) return;
 
   addMessage(message, "user");
   input.value = "";
   button.disabled = true;
 
-  const loading = addMessage("K-ULTRA AI is thinking... 🤖", "bot");
+  const loading = addMessage(
+    "K-ULTRA AI is thinking... ✨",
+    "bot"
+  );
 
   try {
     const response = await fetch(API_URL, {
@@ -92,7 +83,23 @@ async function sendMessage() {
       throw new Error(data.error || "Something went wrong");
     }
 
-    loading.textContent = data.reply || "No reply received.";
+    loading.textContent =
+      data.reply || "No reply received.";
+
+    const history = JSON.parse(
+      localStorage.getItem("kUltraChatHistory") || "[]"
+    );
+
+    history.push({
+      message: loading.textContent,
+      sender: "bot"
+    });
+
+    localStorage.setItem(
+      "kUltraChatHistory",
+      JSON.stringify(history)
+    );
+
   } catch (error) {
     loading.textContent = "Error: " + error.message;
   }
@@ -108,3 +115,10 @@ input.addEventListener("keydown", function(event) {
     sendMessage();
   }
 });
+
+function sendSuggestion(message) {
+  input.value = message;
+  sendMessage();
+}
+
+window.sendSuggestion = sendSuggestion;
