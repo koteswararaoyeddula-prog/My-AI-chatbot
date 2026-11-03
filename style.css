@@ -305,6 +305,54 @@ body {
   margin: 5px 0 15px 0 !important;
   padding: 8px 14px !important;
 }
+/* K-ULTRA AI White + Dark Design */
+
+body {
+  background: #f4f5fa;
+  color: #15182b;
+}
+
+h1 {
+  color: #22204a;
+  font-weight: 800;
+}
+
+#chat {
+  background: #ffffff;
+  border: 1px solid #e4e5ef;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.06);
+}
+
+.user-message {
+  background: #29264f !important;
+  color: white;
+  border-radius: 18px 18px 4px 18px !important;
+}
+
+.bot-message {
+  background: #eeeeF5 !important;
+  color: #17172b;
+  border-radius: 18px 18px 18px 4px !important;
+}
+
+input {
+  background: white;
+  color: #17172b;
+  border: 1px solid #d8d9e5;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+button {
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  opacity: 0.85;
+}
 
 
 
