@@ -2,52 +2,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>K-ULTRA AI</title>
-
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K-ULTRA AI</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
-
 <body>
+  <div class="app">
 
-    <header>
-        <h1>⚡ K-ULTRA AI</h1>
-        <p>Your Next Generation AI Assistant</p>
+    <header class="header">
+      <div class="logo">K<span>✦</span></div>
+      <div class="brand">
+        <h2>K-ULTRA AI</h2>
+        <p><span class="online"></span> AI is online</p>
+      </div>
+      <button class="menu">☰</button>
     </header>
-    <button id="newChatBtn">+ New Chat</button>
 
-    <main id="chatbox">
+    <main class="main">
+      <div class="welcome">
+        <div class="orb">✦</div>
+        <h1>Beyond Intelligence.</h1>
+        <h2>Welcome to K-ULTRA AI</h2>
+        <p>Your ideas. Your world. Your AI.</p>
+        <p class="telugu">నమస్కారం! నేను మీ K-ULTRA AI.</p>
+      </div>
 
-        <div class="bot-message">
-            🤖 Hello! Welcome to K-ULTRA AI.
-            <br><br>
-            I am your intelligent AI assistant.
-            Ask me anything!
-        </div>
+      <div class="suggestions">
+        <button onclick="sendSuggestion('Explain something interesting')">✧ Explore ideas</button>
+        <button onclick="sendSuggestion('Teach me something new')">✧ Learn something</button>
+        <button onclick="sendSuggestion('Write a creative story')">✧ Create a story</button>
+      </div>
 
+      <div id="chat"></div>
     </main>
 
-    <div class="chat-input">
-
-        <input
-            type="text"
-            id="userInput"
-            placeholder="Ask K-ULTRA AI anything..."
-            autocomplete="off"
-        >
-
-        <button id="sendBtn" type="button">
-            Send ➤
-        </button>
-
-    </div>
-
-    <footer>
-        <p>Powered by K-ULTRA AI 🚀</p>
+    <footer class="composer">
+      <input id="userInput" type="text"
+        placeholder="Message K-ULTRA AI..." />
+      <button id="sendBtn" aria-label="Send">➤</button>
     </footer>
 
+    <p class="footer-note">POWERED BY K-ULTRA AI ✦</p>
+
+  </div>
 </body>
 </html>
