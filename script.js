@@ -3,13 +3,35 @@ const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
 
-const API_URL = "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
+const API_URL =
+  "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
 
-function addMessage(message, sender, save = true) {
+function getHistory() {
+  try {
+    return JSON.parse(
+      localStorage.getItem("kUltraChatHistory") || "[]"
+    );
+  } catch {
+    return [];
+  }
+}
+
+function saveMessage(message, sender) {
+  const history = getHistory();
+
+  history.push({ message, sender });
+
+  localStorage.setItem(
+    "kUltraChatHistory",
+    JSON.stringify(history)
+  );
+}
+
+function addMessage(message, sender) {
   const bubble = document.createElement("div");
+
   bubble.className = sender + "-message";
   bubble.textContent = message;
-
   bubble.style.padding = "14px";
   bubble.style.margin = "12px 0";
   bubble.style.borderRadius = "15px";
@@ -25,30 +47,14 @@ function addMessage(message, sender, save = true) {
   }
 
   chat.appendChild(bubble);
-
-  if (save) {
-    const history = JSON.parse(
-      localStorage.getItem("kUltraChatHistory") || "[]"
-    );
-
-    history.push({ message, sender });
-
-    localStorage.setItem(
-      "kUltraChatHistory",
-      JSON.stringify(history)
-    );
-  }
-
   return bubble;
 }
 
 function loadChatHistory() {
-  const history = JSON.parse(
-    localStorage.getItem("kUltraChatHistory") || "[]"
-  );
+  const history = getHistory();
 
   history.forEach(item => {
-    addMessage(item.message, item.sender, false);
+    addMessage(item.message, item.sender);
   });
 }
 
@@ -57,9 +63,21 @@ loadChatHistory();
 async function sendMessage() {
   const message = input.value.trim();
 
-  if (!message) return;
+  if (!message || button.disabled) return;
+
+  // Send only previous messages as conversation history
+  const previousHistory = getHistory();
+
+  const conversationHistory = previousHistory
+    .slice(-10)
+    .map(item => ({
+      role: item.sender === "user" ? "user" : "assistant",
+      content: item.message
+    }));
 
   addMessage(message, "user");
+  saveMessage(message, "user");
+
   input.value = "";
   button.disabled = true;
 
@@ -74,7 +92,10 @@ async function sendMessage() {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message })
+      body: JSON.stringify({
+        message: message,
+        history: conversationHistory
+      })
     });
 
     const data = await response.json();
@@ -83,29 +104,17 @@ async function sendMessage() {
       throw new Error(data.error || "Something went wrong");
     }
 
-    loading.textContent =
-      data.reply || "No reply received.";
+    const reply = data.reply || "No reply received.";
 
-    const history = JSON.parse(
-      localStorage.getItem("kUltraChatHistory") || "[]"
-    );
-
-    history.push({
-      message: loading.textContent,
-      sender: "bot"
-    });
-
-    localStorage.setItem(
-      "kUltraChatHistory",
-      JSON.stringify(history)
-    );
+    loading.textContent = reply;
+    saveMessage(reply, "bot");
 
   } catch (error) {
     loading.textContent = "Error: " + error.message;
+  } finally {
+    button.disabled = false;
+    input.focus();
   }
-
-  button.disabled = false;
-  input.focus();
 }
 
 button.addEventListener("click", sendMessage);
