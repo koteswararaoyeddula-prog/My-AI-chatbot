@@ -46,7 +46,6 @@ loadChatHistory();
 const newChatBtn = document.getElementById("newChatBtn");
 
 newChatBtn.addEventListener("click", function() {
-  alert("New Chat button is working!");
   const currentHistory = JSON.parse(
     localStorage.getItem("kUltraChatHistory") || "[]"
   );
