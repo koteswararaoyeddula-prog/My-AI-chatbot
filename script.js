@@ -97,6 +97,7 @@ function renderChatList() {
   });
 }
 
+
 function addMessage(message, sender) {
   const bubble = document.createElement("div");
 
@@ -117,8 +118,26 @@ function addMessage(message, sender) {
   }
 
   chat.appendChild(bubble);
+
+  if (sender === "bot") {
+    const speaker = document.createElement("button");
+    speaker.textContent = "🔊";
+    speaker.title = "Listen again";
+    speaker.style.marginBottom = "10px";
+    speaker.style.padding = "6px 12px";
+    speaker.style.borderRadius = "10px";
+    speaker.style.cursor = "pointer";
+
+    speaker.addEventListener("click", () => {
+      speakReply(bubble.textContent);
+    });
+
+    chat.appendChild(speaker);
+  }
+
   return bubble;
 }
+
 
 function renderChat() {
   chat.innerHTML = "";
