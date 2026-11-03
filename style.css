@@ -289,4 +289,22 @@ body {
   color: #777b8b;
 }
 
+/* K-ULTRA AI visibility fix */
+
+.bot-message,
+.user-message {
+  color: #ffffff !important;
+}
+
+#chat > button {
+  width: auto !important;
+  display: inline-block !important;
+  background: #7138ff !important;
+  color: white !important;
+  border: none !important;
+  margin: 5px 0 15px 0 !important;
+  padding: 8px 14px !important;
+}
+
+
 
