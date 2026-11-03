@@ -302,7 +302,8 @@ if (micBtn) {
 }
 
 function speakReply(message, speaker) {
-  if (speaker.dataset.playing === "yes") {
+  
+  if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
     speaker.dataset.playing = "no";
     speaker.textContent = "🔊";
