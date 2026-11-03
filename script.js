@@ -215,12 +215,11 @@ async function sendMessage() {
     if (!response.ok) {
       throw new Error(data.error || "Something went wrong");
     }
+const reply = data.reply || "No reply received.";
 
-    const reply = data.reply || "No reply received.";
-
-    loading.textContent = reply;
-    speakReply(reply);
-    saveMessage(reply, "bot");
+loading.textContent = reply;
+saveMessage(reply, "bot");
+    
 
   } catch (error) {
     loading.textContent = "Error: " + error.message;
