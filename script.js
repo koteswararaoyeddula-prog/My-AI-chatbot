@@ -242,3 +242,43 @@ saveConversations();
 renderChat();
 renderChatList();
 window.createNewChat = createConversation;
+
+const micBtn = document.getElementById("micBtn");
+
+const SpeechRecognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+if (micBtn) {
+  micBtn.addEventListener("click", () => {
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser. Please use Chrome.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "te-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      micBtn.textContent = "🔴";
+    };
+
+    recognition.onresult = (event) => {
+      input.value = event.results[0][0].transcript;
+    };
+
+    recognition.onerror = () => {
+      alert("Microphone error. Please try again.");
+    };
+
+    recognition.onend = () => {
+      micBtn.textContent = "🎤";
+    };
+
+    recognition.start();
+  });
+}
+
