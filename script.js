@@ -2,29 +2,99 @@
 const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
+const newChatBtn = document.getElementById("newChatBtn");
 
 const API_URL =
   "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
 
-function getHistory() {
-  try {
-    return JSON.parse(
-      localStorage.getItem("kUltraChatHistory") || "[]"
-    );
-  } catch {
-    return [];
+const CHAT_KEY = "kUltraConversations";
+const CURRENT_KEY = "kUltraCurrentChatId";
+
+let conversations = JSON.parse(
+  localStorage.getItem(CHAT_KEY) || "[]"
+);
+
+let currentChatId = localStorage.getItem(CURRENT_KEY);
+
+// Old chat history migration
+if (conversations.length === 0) {
+  const oldHistory = JSON.parse(
+    localStorage.getItem("kUltraChatHistory") || "[]"
+  );
+
+  if (oldHistory.length > 0) {
+    conversations.push({
+      id: Date.now().toString(),
+      title: "Previous Chat",
+      messages: oldHistory
+    });
   }
 }
 
-function saveMessage(message, sender) {
-  const history = getHistory();
-
-  history.push({ message, sender });
-
+function saveConversations() {
   localStorage.setItem(
-    "kUltraChatHistory",
-    JSON.stringify(history)
+    CHAT_KEY,
+    JSON.stringify(conversations)
   );
+
+  localStorage.setItem(CURRENT_KEY, currentChatId || "");
+}
+
+function createConversation() {
+  const conversation = {
+    id: Date.now().toString(),
+    title: "New Chat",
+    messages: []
+  };
+
+  conversations.unshift(conversation);
+  currentChatId = conversation.id;
+
+  saveConversations();
+  renderChat();
+  renderChatList();
+}
+
+function getCurrentChat() {
+  return conversations.find(
+    item => item.id === currentChatId
+  );
+}
+
+// Previous chats area
+let chatSessions = document.getElementById("chatSessions");
+
+if (!chatSessions) {
+  chatSessions = document.createElement("div");
+  chatSessions.id = "chatSessions";
+  chat.parentNode.insertBefore(chatSessions, chat);
+}
+
+function renderChatList() {
+  chatSessions.innerHTML = "<h3>Previous Chats</h3>";
+
+  conversations.forEach(conversation => {
+    const item = document.createElement("button");
+
+    item.textContent = conversation.title;
+    item.style.display = "block";
+    item.style.width = "100%";
+    item.style.padding = "10px";
+    item.style.margin = "5px 0";
+    item.style.borderRadius = "10px";
+    item.style.background = "#183451";
+    item.style.color = "white";
+    item.style.border = "1px solid #343078";
+
+    item.addEventListener("click", () => {
+      currentChatId = conversation.id;
+      saveConversations();
+      renderChat();
+      renderChatList();
+    });
+
+    chatSessions.appendChild(item);
+  });
 }
 
 function addMessage(message, sender) {
@@ -50,25 +120,48 @@ function addMessage(message, sender) {
   return bubble;
 }
 
-function loadChatHistory() {
-  const history = getHistory();
+function renderChat() {
+  chat.innerHTML = "";
 
-  history.forEach(item => {
+  const conversation = getCurrentChat();
+
+  if (!conversation) return;
+
+  conversation.messages.forEach(item => {
     addMessage(item.message, item.sender);
   });
 }
 
-loadChatHistory();
+function saveMessage(message, sender) {
+  const conversation = getCurrentChat();
+
+  if (!conversation) return;
+
+  conversation.messages.push({ message, sender });
+
+  if (
+    conversation.title === "New Chat" &&
+    sender === "user"
+  ) {
+    conversation.title = message.slice(0, 25);
+  }
+
+  saveConversations();
+  renderChatList();
+}
 
 async function sendMessage() {
   const message = input.value.trim();
 
   if (!message || button.disabled) return;
 
-  // Send only previous messages as conversation history
-  const previousHistory = getHistory();
+  if (!getCurrentChat()) {
+    createConversation();
+  }
 
-  const conversationHistory = previousHistory
+  const conversation = getCurrentChat();
+
+  const history = conversation.messages
     .slice(-10)
     .map(item => ({
       role: item.sender === "user" ? "user" : "assistant",
@@ -94,7 +187,7 @@ async function sendMessage() {
       },
       body: JSON.stringify({
         message: message,
-        history: conversationHistory
+        history: history
       })
     });
 
@@ -125,9 +218,26 @@ input.addEventListener("keydown", function(event) {
   }
 });
 
+newChatBtn.addEventListener("click", createConversation);
+
 function sendSuggestion(message) {
   input.value = message;
   sendMessage();
 }
 
 window.sendSuggestion = sendSuggestion;
+
+// Open previous chat or create the first chat
+if (
+  !conversations.some(item => item.id === currentChatId)
+) {
+  if (conversations.length > 0) {
+    currentChatId = conversations[0].id;
+  } else {
+    createConversation();
+  }
+}
+
+saveConversations();
+renderChat();
+renderChatList();
