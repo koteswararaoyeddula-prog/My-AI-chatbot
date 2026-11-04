@@ -1,4 +1,3 @@
-
 const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
@@ -31,6 +30,8 @@ if (conversations.length === 0) {
       title: "Previous Chat",
       messages: oldHistory
     });
+
+    localStorage.removeItem("kUltraChatHistory");
   }
 }
 
@@ -73,6 +74,41 @@ if (!chatSessions) {
   chat.parentNode.insertBefore(chatSessions, chat);
 }
 
+// Delete conversation
+function deleteConversation(chatId) {
+  const conversation = conversations.find(
+    item => item.id === chatId
+  );
+
+  if (!conversation) return;
+
+  const confirmed = confirm(
+    `Delete "${conversation.title}"?`
+  );
+
+  if (!confirmed) return;
+
+  conversations = conversations.filter(
+    item => item.id !== chatId
+  );
+
+  if (currentChatId === chatId) {
+    if (conversations.length > 0) {
+      currentChatId = conversations[0].id;
+    } else {
+      currentChatId = "";
+      saveConversations();
+      createConversation();
+      return;
+    }
+  }
+
+  saveConversations();
+  renderChat();
+  renderChatList();
+}
+
+// Render previous chats
 function renderChatList() {
   chatSessions.innerHTML = "<h3>Previous Chats</h3>";
 
@@ -88,8 +124,90 @@ function renderChatList() {
     item.style.background = "#183451";
     item.style.color = "white";
     item.style.border = "1px solid #343078";
+    item.style.userSelect = "none";
+    item.style.touchAction = "pan-y";
 
+    // Normal tap opens chat
+    let longPressTimer = null;
+    let longPressTriggered = false;
+
+    // Delete option menu
+    function showDeleteOption() {
+      const oldMenu = chatSessions.querySelector(
+        ".chat-delete-menu"
+      );
+
+      if (oldMenu) {
+        oldMenu.remove();
+      }
+
+      const menu = document.createElement("div");
+      menu.className = "chat-delete-menu";
+
+      menu.style.padding = "8px";
+      menu.style.margin = "0 0 8px 0";
+      menu.style.background = "#20283c";
+      menu.style.borderRadius = "10px";
+
+      const deleteBtn = document.createElement("button");
+
+      deleteBtn.textContent = "🗑️ Delete Chat";
+      deleteBtn.style.background = "#c62828";
+      deleteBtn.style.color = "white";
+      deleteBtn.style.border = "none";
+      deleteBtn.style.padding = "10px 14px";
+      deleteBtn.style.borderRadius = "8px";
+      deleteBtn.style.cursor = "pointer";
+
+      deleteBtn.addEventListener("click", event => {
+        event.stopPropagation();
+        deleteConversation(conversation.id);
+      });
+
+      menu.appendChild(deleteBtn);
+      item.insertAdjacentElement("afterend", menu);
+    }
+
+    // Long press detection
+    item.addEventListener("pointerdown", () => {
+      longPressTriggered = false;
+
+      longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        showDeleteOption();
+
+        setTimeout(() => {
+          longPressTriggered = false;
+        }, 1000);
+
+      }, 600);
+    });
+
+    item.addEventListener("pointerup", () => {
+      clearTimeout(longPressTimer);
+    });
+
+    item.addEventListener("pointerleave", () => {
+      clearTimeout(longPressTimer);
+    });
+
+    item.addEventListener("pointercancel", () => {
+      clearTimeout(longPressTimer);
+    });
+
+    // Right-click support for computer
+    item.addEventListener("contextmenu", event => {
+      event.preventDefault();
+      showDeleteOption();
+    });
+
+    // Normal click
     item.addEventListener("click", () => {
+      if (longPressTriggered) {
+        longPressTriggered = false;
+        return;
+      }
+
       currentChatId = conversation.id;
       saveConversations();
       renderChat();
@@ -169,7 +287,6 @@ function addMessage(message, sender, userIndex = -1) {
       actions.appendChild(regenerateBtn);
     }
 
-    // Add both buttons together
     chat.appendChild(actions);
   }
 
