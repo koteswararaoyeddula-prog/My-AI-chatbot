@@ -486,6 +486,12 @@ button:hover {
   color: white;
   border: none;
 }
+.sidebar-toggle {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  top: auto;
+}
 
 
 
