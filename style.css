@@ -446,3 +446,9 @@ body {
   transform: scale(0.95);
   background: #b91c1c;
 }
+#chat button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 5px 5px 5px 0;
+}
