@@ -168,38 +168,33 @@ function renderChatList() {
       item.insertAdjacentElement("afterend", menu);
     }
 
-    // Long press detection
-    item.addEventListener("pointerdown", () => {
-      longPressTriggered = false;
+// Long press detection for Android
+item.addEventListener("touchstart", () => {
+  longPressTimer = setTimeout(() => {
+    longPressTriggered = true;
+    showDeleteOption();
+  }, 600);
+}, { passive: true });
 
-      longPressTimer = setTimeout(() => {
-        longPressTriggered = true;
-        showDeleteOption();
+item.addEventListener("touchend", () => {
+  clearTimeout(longPressTimer);
+});
 
-        setTimeout(() => {
-          longPressTriggered = false;
-        }, 1000);
+item.addEventListener("touchmove", () => {
+  clearTimeout(longPressTimer);
+});
 
-      }, 600);
-    });
+item.addEventListener("touchcancel", () => {
+  clearTimeout(longPressTimer);
+});
 
-    item.addEventListener("pointerup", () => {
-      clearTimeout(longPressTimer);
-    });
+// Right-click support for computer
+item.addEventListener("contextmenu", event => {
+  event.preventDefault();
+  showDeleteOption();
+});
 
-    item.addEventListener("pointerleave", () => {
-      clearTimeout(longPressTimer);
-    });
-
-    item.addEventListener("pointercancel", () => {
-      clearTimeout(longPressTimer);
-    });
-
-    // Right-click support for computer
-    item.addEventListener("contextmenu", event => {
-      event.preventDefault();
-      showDeleteOption();
-    });
+    
 
     // Normal click
     item.addEventListener("click", () => {
