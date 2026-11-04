@@ -125,7 +125,7 @@ function renderChatList() {
     item.style.color = "white";
     item.style.border = "1px solid #343078";
     item.style.userSelect = "none";
-    item.style.touchAction = "pan-y";
+    item.style.touchAction = "none";
 
     // Normal tap opens chat
     let longPressTimer = null;
