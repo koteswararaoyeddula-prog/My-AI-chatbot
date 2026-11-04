@@ -203,16 +203,20 @@ async function sendMessage() {
 loading.classList.add("typing-indicator");
 
   try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: message,
-        history: history
-      })
-    });
+    abortController = new AbortController();
+stopBtn.style.display = "inline-block";
+
+const response = await fetch(API_URL, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  signal: abortController.signal,
+  body: JSON.stringify({
+    message: message,
+    history: history
+  })
+});
 
     const data = await response.json();
 
