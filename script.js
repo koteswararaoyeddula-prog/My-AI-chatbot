@@ -136,7 +136,10 @@ function addMessage(message, sender) {
 
     chat.appendChild(speaker);
   }
-
+const regenerateBtn = document.createElement("button");
+regenerateBtn.textContent = "🔄 Regenerate";
+regenerateBtn.onclick = regenerateResponse;
+chat.appendChild(regenerateBtn);
   return bubble;
 }
 
@@ -244,7 +247,30 @@ saveMessage(reply, "bot");
   input.focus();
   }
 }
+function regenerateResponse() {
+  const conversation = getCurrentChat();
+  if (!conversation) return;
 
+  let index = -1;
+
+  for (let i = conversation.messages.length - 1; i >= 0; i--) {
+    if (conversation.messages[i].sender === "user") {
+      index = i;
+      break;
+    }
+  }
+
+  if (index === -1) return;
+
+  const message = conversation.messages[index].message;
+
+  conversation.messages = conversation.messages.slice(0, index);
+  saveConversations();
+  renderChat();
+
+  input.value = message;
+  sendMessage();
+      }
 button.addEventListener("click", sendMessage);
 stopBtn.addEventListener("click", () => {
   if (abortController) {
