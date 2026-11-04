@@ -452,3 +452,18 @@ body {
   justify-content: center;
   margin: 5px 5px 5px 0;
 }
+#chat .message-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+#chat .message-actions button {
+  display: inline-flex !important;
+  width: auto !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+}
