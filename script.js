@@ -330,3 +330,9 @@ function speakReply(message, speaker) {
 
   window.speechSynthesis.speak(speech);
 }
+const sidebarToggle = document.getElementById("sidebarToggle");
+const workspace = document.querySelector(".workspace");
+
+sidebarToggle.addEventListener("click", function() {
+  workspace.classList.toggle("sidebar-closed");
+});
