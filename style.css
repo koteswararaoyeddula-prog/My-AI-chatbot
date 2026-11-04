@@ -1,4 +1,4 @@
-
+ 
 * {
   margin: 0;
   padding: 0;
@@ -370,6 +370,25 @@ button:hover {
   width: auto !important;
   min-width: 50px;
   padding: 8px 14px !important;
+}
+/* K-ULTRA AI - Dark Chat Bubbles */
+
+#chat > div.user-message,
+#chat > div.bot-message {
+  background: #17182b !important;
+  color: #ffffff !important;
+  border: 1px solid #343653 !important;
+  padding: 16px !important;
+  border-radius: 18px !important;
+  line-height: 1.7 !important;
+}
+
+#chat > div.user-message {
+  margin-left: auto !important;
+}
+
+#chat > div.bot-message {
+  margin-right: auto !important;
 }
 
 
