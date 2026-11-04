@@ -513,6 +513,21 @@ button:hover {
 #chatSessions {
   color: #000000 !important;
 }
+.sidebar {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-right: 1px solid #dddddd;
+}
+
+.sidebar:not(.active) {
+  background: #080b18 !important;
+  border-right: none;
+}
+
+.sidebar button {
+  background: #000000 !important;
+  color: #ffffff !important;
+}
 
 
 
