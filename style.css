@@ -487,9 +487,10 @@ button:hover {
   border: none;
 }
 .sidebar-toggle {
-  position: absolute !important;
-  top: 75px !important;
-  left: 20px !important;
+  position: static !important;
+  display: block;
+  margin-top: 10px;
+  margin-left: 0;
   z-index: 9999;
 }
 
