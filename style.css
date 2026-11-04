@@ -318,7 +318,7 @@ body {
 
 .composer {
   display: flex;
-  gap: 10px;
+  gap: 4px;
   padding: 15px;
   margin: 10px 15px;
   border-radius: 19px;
