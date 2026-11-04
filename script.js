@@ -1,9 +1,9 @@
-
 const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
 const newChatBtn = document.getElementById("newChatBtn");
 const stopBtn = document.getElementById("stopBtn");
+
 let abortController = null;
 
 const API_URL =
@@ -63,7 +63,7 @@ function getCurrentChat() {
   );
 }
 
-// Previous chats area
+// Previous chats
 let chatSessions = document.getElementById("chatSessions");
 
 if (!chatSessions) {
@@ -99,8 +99,8 @@ function renderChatList() {
   });
 }
 
-
-function addMessage(message, sender) {
+// Add messages
+function addMessage(message, sender, userIndex = -1) {
   const bubble = document.createElement("div");
 
   bubble.className = sender + "-message";
@@ -122,7 +122,9 @@ function addMessage(message, sender) {
   chat.appendChild(bubble);
 
   if (sender === "bot") {
+    // Voice button
     const speaker = document.createElement("button");
+
     speaker.textContent = "🔊";
     speaker.title = "Listen again";
     speaker.style.marginBottom = "10px";
@@ -135,15 +137,30 @@ function addMessage(message, sender) {
     });
 
     chat.appendChild(speaker);
+
+    // Regenerate button
+    if (userIndex >= 0) {
+      const regenerateBtn = document.createElement("button");
+
+      regenerateBtn.textContent = "🔄 Regenerate";
+      regenerateBtn.title = "Generate another response";
+      regenerateBtn.style.marginLeft = "8px";
+      regenerateBtn.style.padding = "6px 12px";
+      regenerateBtn.style.borderRadius = "10px";
+      regenerateBtn.style.cursor = "pointer";
+
+      regenerateBtn.addEventListener("click", () => {
+        regenerateResponse(userIndex);
+      });
+
+      chat.appendChild(regenerateBtn);
+    }
   }
-const regenerateBtn = document.createElement("button");
-regenerateBtn.textContent = "🔄 Regenerate";
-regenerateBtn.onclick = regenerateResponse;
-chat.appendChild(regenerateBtn);
+
   return bubble;
 }
 
-
+// Display chat
 function renderChat() {
   chat.innerHTML = "";
 
@@ -151,11 +168,23 @@ function renderChat() {
 
   if (!conversation) return;
 
-  conversation.messages.forEach(item => {
-    addMessage(item.message, item.sender);
+  conversation.messages.forEach((item, index) => {
+    let userIndex = -1;
+
+    if (item.sender === "bot") {
+      for (let i = index - 1; i >= 0; i--) {
+        if (conversation.messages[i].sender === "user") {
+          userIndex = i;
+          break;
+        }
+      }
+    }
+
+    addMessage(item.message, item.sender, userIndex);
   });
 }
 
+// Save messages
 function saveMessage(message, sender) {
   const conversation = getCurrentChat();
 
@@ -174,6 +203,7 @@ function saveMessage(message, sender) {
   renderChatList();
 }
 
+// Send message
 async function sendMessage() {
   const message = input.value.trim();
 
@@ -192,86 +222,95 @@ async function sendMessage() {
       content: item.message
     }));
 
-  addMessage(message, "user");
   saveMessage(message, "user");
+
+  const userIndex = conversation.messages.length - 1;
+
+  addMessage(message, "user");
 
   input.value = "";
   button.disabled = true;
 
   const loading = addMessage(
-  "K-ULTRA AI is typing",
-  "bot"
-);
+    "K-ULTRA AI is typing",
+    "bot",
+    userIndex
+  );
 
-loading.classList.add("typing-indicator");
+  loading.classList.add("typing-indicator");
 
   try {
     abortController = new AbortController();
-stopBtn.style.display = "inline-block";
 
-const response = await fetch(API_URL, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  signal: abortController.signal,
-  body: JSON.stringify({
-    message: message,
-    history: history
-  })
-});
+    stopBtn.style.display = "inline-block";
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      signal: abortController.signal,
+      body: JSON.stringify({
+        message: message,
+        history: history
+      })
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
       throw new Error(data.error || "Something went wrong");
     }
-const reply = data.reply || "No reply received.";
-loading.classList.remove("typing-indicator");
-loading.textContent = reply;
-saveMessage(reply, "bot");
-    
+
+    const reply = data.reply || "No reply received.";
+
+    loading.classList.remove("typing-indicator");
+    loading.textContent = reply;
+
+    saveMessage(reply, "bot");
 
   } catch (error) {
-  loading.classList.remove("typing-indicator");
+    loading.classList.remove("typing-indicator");
 
-  if (error.name === "AbortError") {
-    loading.textContent = "Generation stopped.";
-  } else {
-    loading.textContent = "Error: " + error.message;
-  }
-} finally {
-  button.disabled = false;
-  stopBtn.style.display = "none";
-  abortController = null;
-  input.focus();
+    if (error.name === "AbortError") {
+      loading.textContent = "Generation stopped.";
+    } else {
+      loading.textContent = "Error: " + error.message;
+    }
+
+  } finally {
+    button.disabled = false;
+    stopBtn.style.display = "none";
+    abortController = null;
+    input.focus();
   }
 }
-function regenerateResponse() {
+
+// Regenerate response
+function regenerateResponse(userIndex) {
   const conversation = getCurrentChat();
-  if (!conversation) return;
 
-  let index = -1;
+  if (!conversation || button.disabled || abortController) return;
 
-  for (let i = conversation.messages.length - 1; i >= 0; i--) {
-    if (conversation.messages[i].sender === "user") {
-      index = i;
-      break;
-    }
+  const message = conversation.messages[userIndex]?.message;
+
+  if (!message || conversation.messages[userIndex].sender !== "user") {
+    return;
   }
 
-  if (index === -1) return;
+  conversation.messages = conversation.messages.slice(0, userIndex);
 
-  const message = conversation.messages[index].message;
-
-  conversation.messages = conversation.messages.slice(0, index);
   saveConversations();
   renderChat();
 
   input.value = message;
+
   sendMessage();
-      }
+}
+
+// Button events
 button.addEventListener("click", sendMessage);
+
 stopBtn.addEventListener("click", () => {
   if (abortController) {
     abortController.abort();
@@ -286,6 +325,7 @@ input.addEventListener("keydown", function(event) {
 
 newChatBtn.addEventListener("click", createConversation);
 
+// Suggestions
 function sendSuggestion(message) {
   input.value = message;
   sendMessage();
@@ -293,7 +333,7 @@ function sendSuggestion(message) {
 
 window.sendSuggestion = sendSuggestion;
 
-// Open previous chat or create the first chat
+// Open previous chat
 if (
   !conversations.some(item => item.id === currentChatId)
 ) {
@@ -307,8 +347,10 @@ if (
 saveConversations();
 renderChat();
 renderChatList();
+
 window.createNewChat = createConversation;
 
+// Voice input
 const micBtn = document.getElementById("micBtn");
 
 const SpeechRecognition =
@@ -348,16 +390,15 @@ if (micBtn) {
   });
 }
 
+// Voice output
 function speakReply(message, speaker) {
-  
+
   if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
     speaker.dataset.playing = "no";
     speaker.textContent = "🔊";
     return;
   }
-
-  
 
   const speech = new SpeechSynthesisUtterance(message);
 
@@ -377,9 +418,13 @@ function speakReply(message, speaker) {
 
   window.speechSynthesis.speak(speech);
 }
+
+// Sidebar
 const sidebarToggle = document.getElementById("sidebarToggle");
 const workspace = document.querySelector(".workspace");
 
-sidebarToggle.addEventListener("click", function() {
-  workspace.classList.toggle("sidebar-closed");
-});
+if (sidebarToggle && workspace) {
+  sidebarToggle.addEventListener("click", function() {
+    workspace.classList.toggle("sidebar-closed");
+  });
+}
