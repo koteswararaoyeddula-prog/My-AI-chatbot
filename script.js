@@ -230,11 +230,18 @@ saveMessage(reply, "bot");
     
 
   } catch (error) {
-    loading.classList.remove("typing-indicator");
+  loading.classList.remove("typing-indicator");
+
+  if (error.name === "AbortError") {
+    loading.textContent = "Generation stopped.";
+  } else {
     loading.textContent = "Error: " + error.message;
-  } finally {
-    button.disabled = false;
-    input.focus();
+  }
+} finally {
+  button.disabled = false;
+  stopBtn.style.display = "none";
+  abortController = null;
+  input.focus();
   }
 }
 
