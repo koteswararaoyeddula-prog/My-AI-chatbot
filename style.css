@@ -493,6 +493,26 @@ button:hover {
   margin-left: 0;
   z-index: 9999;
 }
+.sidebar {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-right: 1px solid #dddddd;
+}
+
+.sidebar button {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: none;
+  border-radius: 10px;
+}
+
+.sidebar button:hover {
+  background: #333333 !important;
+}
+
+#chatSessions {
+  color: #000000 !important;
+}
 
 
 
