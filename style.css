@@ -390,6 +390,85 @@ button:hover {
 #chat > div.bot-message {
   margin-right: auto !important;
 }
+/* K-ULTRA AI SIDEBAR DESIGN */
+
+.workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 18px 12px;
+  background: #151725;
+  color: white;
+  border-right: 1px solid #292d43;
+}
+
+.new-chat {
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 22px;
+  border: 1px solid #7138ff;
+  border-radius: 12px;
+  background: #7138ff;
+  color: white;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+#chatSessions {
+  width: 100%;
+  color: white;
+}
+
+#chatSessions h3 {
+  font-size: 14px;
+  color: #b9b9ca;
+  margin-bottom: 12px;
+}
+
+#chatSessions button {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  cursor: pointer;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Mobile design */
+@media (max-width: 600px) {
+  .sidebar {
+    width: 125px;
+    padding: 12px 7px;
+  }
+
+  .new-chat {
+    font-size: 12px;
+    padding: 11px 4px;
+  }
+
+  #chatSessions h3 {
+    font-size: 11px;
+  }
+
+  #chatSessions button {
+    font-size: 11px;
+    padding: 9px 5px !important;
+  }
+
+  .main {
+    padding: 15px 8px;
+  }
+}
 
 
 
