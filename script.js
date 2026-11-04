@@ -1,3 +1,4 @@
+
 const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
@@ -122,17 +123,23 @@ function addMessage(message, sender, userIndex = -1) {
   chat.appendChild(bubble);
 
   if (sender === "bot") {
+
+    // Buttons container
     const actions = document.createElement("div");
-actions.style.display = "flex";
-actions.style.alignItems = "center";
-actions.style.gap = "8px";
-actions.style.marginTop = "8px";
+
+    actions.style.display = "flex";
+    actions.style.flexDirection = "row";
+    actions.style.alignItems = "center";
+    actions.style.gap = "8px";
+    actions.style.marginTop = "8px";
+    actions.style.flexWrap = "wrap";
+
     // Voice button
     const speaker = document.createElement("button");
 
     speaker.textContent = "🔊";
     speaker.title = "Listen again";
-    speaker.style.marginBottom = "10px";
+    speaker.style.margin = "0";
     speaker.style.padding = "6px 12px";
     speaker.style.borderRadius = "10px";
     speaker.style.cursor = "pointer";
@@ -149,7 +156,7 @@ actions.style.marginTop = "8px";
 
       regenerateBtn.textContent = "🔄 Regenerate";
       regenerateBtn.title = "Generate another response";
-      regenerateBtn.style.marginLeft = "8px";
+      regenerateBtn.style.margin = "0";
       regenerateBtn.style.padding = "6px 12px";
       regenerateBtn.style.borderRadius = "10px";
       regenerateBtn.style.cursor = "pointer";
@@ -157,10 +164,12 @@ actions.style.marginTop = "8px";
       regenerateBtn.addEventListener("click", () => {
         regenerateResponse(userIndex);
       });
-      chat.appendChild(actions);
 
       actions.appendChild(regenerateBtn);
     }
+
+    // Add both buttons together
+    chat.appendChild(actions);
   }
 
   return bubble;
@@ -300,7 +309,10 @@ function regenerateResponse(userIndex) {
 
   const message = conversation.messages[userIndex]?.message;
 
-  if (!message || conversation.messages[userIndex].sender !== "user") {
+  if (
+    !message ||
+    conversation.messages[userIndex].sender !== "user"
+  ) {
     return;
   }
 
@@ -433,4 +445,4 @@ if (sidebarToggle && workspace) {
   sidebarToggle.addEventListener("click", function() {
     workspace.classList.toggle("sidebar-closed");
   });
-}
+      }
