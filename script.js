@@ -194,9 +194,11 @@ async function sendMessage() {
   button.disabled = true;
 
   const loading = addMessage(
-    "K-ULTRA AI is thinking... ✨",
-    "bot"
-  );
+  "K-ULTRA AI is typing",
+  "bot"
+);
+
+loading.classList.add("typing-indicator");
 
   try {
     const response = await fetch(API_URL, {
