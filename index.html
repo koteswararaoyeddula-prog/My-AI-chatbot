@@ -1,11 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>K-ULTRA AI</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <script src="script.js" defer></script>
 </head>
 <body>
@@ -17,34 +16,42 @@
         <h2>K-ULTRA AI</h2>
         <p><span class="online"></span> AI is online</p>
       </div>
-      <button type="button" class="menu" id="newChatBtn" 
-        onclick="createNewChat()">＋ New Chat</button>
     </header>
 
-    <main class="main">
-      <div class="welcome">
-        <div class="orb">✦</div>
-        <h1>Beyond Intelligence.</h1>
-        <h2>Welcome to K-ULTRA AI</h2>
-        <p>Your ideas. Your world. Your AI.</p>
-        <p class="telugu">నమస్కారం! నేను మీ K-ULTRA AI.</p>
-      </div>
+    <div class="workspace">
 
-      <div class="suggestions">
-        <button onclick="sendSuggestion('Explain something interesting')">✧ Explore ideas</button>
-        <button onclick="sendSuggestion('Teach me something new')">✧ Learn something</button>
-        <button onclick="sendSuggestion('Write a creative story')">✧ Create a story</button>
-      </div>
+      <aside class="sidebar">
+        <button type="button" class="new-chat" id="newChatBtn">
+          ＋ New Chat
+        </button>
 
-      <div id="chat"></div>
-    </main>
+        <div id="chatSessions"></div>
+      </aside>
+
+      <main class="main">
+        <div class="welcome">
+          <div class="orb">✦</div>
+          <h1>Beyond Intelligence.</h1>
+          <h2>Welcome to K-ULTRA AI</h2>
+          <p>Your ideas. Your world. Your AI.</p>
+          <p class="telugu">నమస్కారం! నేను మీ K-ULTRA AI.</p>
+        </div>
+
+        <div class="suggestions">
+          <button onclick="sendSuggestion('Explain something interesting')">✧ Explore ideas</button>
+          <button onclick="sendSuggestion('Teach me something new')">✧ Learn something</button>
+          <button onclick="sendSuggestion('Write a creative story')">✧ Create a story</button>
+        </div>
+
+        <div id="chat"></div>
+      </main>
+
+    </div>
 
     <footer class="composer">
-  <input id="userInput" type="text" placeholder="Message K-ULTRA AI..." />
-
-  <button type="button" id="micBtn" aria-label="Voice input">🎤</button>
-
-  <button id="sendBtn" aria-label="Send">➤</button>
+      <input id="userInput" type="text" placeholder="Message K-ULTRA AI..." />
+      <button type="button" id="micBtn">🎤</button>
+      <button id="sendBtn">➤</button>
     </footer>
 
     <p class="footer-note">POWERED BY K-ULTRA AI ✦</p>
