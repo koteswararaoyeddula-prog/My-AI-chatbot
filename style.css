@@ -35,12 +35,11 @@
   align-self: flex-start;
 }
 
-.new-chat {
-  border: 2px solid #000 !important;
-  border-radius: 12px;
-  background: #fff !important;
-  color: #000 !important;
-  padding: 13px;
+.sidebar .new-chat {
+  background: #2563eb !important;
+  color: white !important;
+  border: 2px solid #1d4ed8 !important;
+  border-radius: 12px !important;
 }
 
 
