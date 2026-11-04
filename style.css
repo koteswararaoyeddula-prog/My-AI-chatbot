@@ -405,16 +405,18 @@ body {
   }
 }
 .typing-indicator {
-  animation: typingBlink 1s infinite;
+  font-size: 0;
+}
+
+.typing-indicator::after {
+  content: "● ● ●";
+  font-size: 18px;
+  letter-spacing: 5px;
   color: #a78bfa;
-  font-style: italic;
+  animation: typingBlink 1s infinite;
 }
 
 @keyframes typingBlink {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
