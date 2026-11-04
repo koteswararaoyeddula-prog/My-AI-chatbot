@@ -218,7 +218,7 @@ loading.classList.add("typing-indicator");
       throw new Error(data.error || "Something went wrong");
     }
 const reply = data.reply || "No reply received.";
-
+loading.classList.remove("typing-indicator");
 loading.textContent = reply;
 saveMessage(reply, "bot");
     
