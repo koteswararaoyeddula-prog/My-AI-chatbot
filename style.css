@@ -420,17 +420,26 @@ body {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
-#stopBtn {
+.composer #stopBtn {
+  width: auto;
+  min-width: 85px;
+  height: 45px;
+  padding: 0 14px;
   background: #dc2626 !important;
-color: white !important;
+  color: white !important;
   border: none;
-  padding: 10px 18px;
-  border-radius: 25px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: bold;
+  margin: 0;
+  white-space: nowrap;
   cursor: pointer;
-  margin: 8px;
-  box-shadow: 0 3px 12px rgba(220, 38, 38, 0.25);
+  box-shadow: 0 3px 12px #dc262644;
+}
+
+.composer #stopBtn:active {
+  transform: scale(0.95);
+  background: #b91c1c !important;
 }
 
 #stopBtn:active {
