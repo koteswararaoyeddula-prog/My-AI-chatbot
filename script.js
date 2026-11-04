@@ -246,6 +246,11 @@ saveMessage(reply, "bot");
 }
 
 button.addEventListener("click", sendMessage);
+stopBtn.addEventListener("click", () => {
+  if (abortController) {
+    abortController.abort();
+  }
+});
 
 input.addEventListener("keydown", function(event) {
   if (event.key === "Enter") {
