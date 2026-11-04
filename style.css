@@ -652,5 +652,18 @@ button:hover {
   background: transparent !important;
   font-size: 25px !important;
 }
+.header {
+  position: relative !important;
+}
 
+.sidebar-toggle {
+  position: absolute !important;
+  left: 15px !important;
+  top: 85px !important;
+  margin: 0 !important;
+  color: white !important;
+  font-size: 25px !important;
+  background: transparent !important;
+  border: none !important;
+}
 
