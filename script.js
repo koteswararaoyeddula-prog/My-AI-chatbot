@@ -446,4 +446,4 @@ if (sidebarToggle && workspace) {
   sidebarToggle.addEventListener("click", function() {
     workspace.classList.toggle("sidebar-closed");
   });
-      }
+}
