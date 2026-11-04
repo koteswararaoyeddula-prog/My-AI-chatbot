@@ -435,38 +435,8 @@ async function sendMessage() {
 
     saveMessage(reply, "bot", imageUrl);
 
-    // Add action buttons
-    const actions = document.createElement("div");
-    actions.className = "message-actions";
-    actions.style.display = "flex";
-    actions.style.gap = "8px";
-    actions.style.marginTop = "8px";
-    actions.style.flexWrap = "wrap";
+    
 
-    const speaker = document.createElement("button");
-    speaker.textContent = "🔊";
-    speaker.title = "Listen again";
-    speaker.style.padding = "6px 12px";
-    speaker.style.borderRadius = "10px";
-
-    speaker.addEventListener("click", () => {
-      speakReply(reply, speaker);
-    });
-
-    actions.appendChild(speaker);
-
-    const regenerateBtn = document.createElement("button");
-    regenerateBtn.textContent = "🔄 Regenerate";
-    regenerateBtn.style.padding = "6px 12px";
-    regenerateBtn.style.borderRadius = "10px";
-
-    regenerateBtn.addEventListener("click", () => {
-      regenerateResponse(userIndex);
-    });
-
-    actions.appendChild(regenerateBtn);
-
-    chat.appendChild(actions);
 
   } catch (error) {
     loading.classList.remove("typing-indicator");
