@@ -692,4 +692,21 @@ button:hover {
   padding: 6px 10px;
   z-index: 99999;
  }
+.sidebar {
+  padding-top: 35px !important;
+  padding-left: 8px !important;
+}
+
+.new-chat {
+  display: block !important;
+  margin-top: 20px !important;
+  margin-left: 0 !important;
+  width: 100% !important;
+  text-align: left !important;
+  padding: 13px 12px !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 10px !important;
+}
 
