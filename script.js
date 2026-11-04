@@ -3,6 +3,8 @@ const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
 const newChatBtn = document.getElementById("newChatBtn");
+const stopBtn = document.getElementById("stopBtn");
+let abortController = null;
 
 const API_URL =
   "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
