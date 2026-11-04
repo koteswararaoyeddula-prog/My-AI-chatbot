@@ -126,6 +126,7 @@ function addMessage(message, sender, userIndex = -1) {
 
     // Buttons container
     const actions = document.createElement("div");
+    actions.className = "message-actions";
 
     actions.style.display = "flex";
     actions.style.flexDirection = "row";
