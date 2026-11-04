@@ -122,6 +122,11 @@ function addMessage(message, sender, userIndex = -1) {
   chat.appendChild(bubble);
 
   if (sender === "bot") {
+    const actions = document.createElement("div");
+actions.style.display = "flex";
+actions.style.alignItems = "center";
+actions.style.gap = "8px";
+actions.style.marginTop = "8px";
     // Voice button
     const speaker = document.createElement("button");
 
@@ -136,7 +141,7 @@ function addMessage(message, sender, userIndex = -1) {
       speakReply(bubble.textContent, speaker);
     });
 
-    chat.appendChild(speaker);
+    actions.appendChild(speaker);
 
     // Regenerate button
     if (userIndex >= 0) {
@@ -152,8 +157,9 @@ function addMessage(message, sender, userIndex = -1) {
       regenerateBtn.addEventListener("click", () => {
         regenerateResponse(userIndex);
       });
+      chat.appendChild(actions);
 
-      chat.appendChild(regenerateBtn);
+      actions.appendChild(regenerateBtn);
     }
   }
 
