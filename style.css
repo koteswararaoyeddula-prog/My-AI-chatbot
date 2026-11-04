@@ -353,6 +353,24 @@ button {
 button:hover {
   opacity: 0.85;
 }
+/* K-ULTRA AI Text and Voice Button Fix */
+
+.bot-message {
+  color: #17172b !important;
+  background: #eeeeF5 !important;
+}
+
+.user-message {
+  color: #ffffff !important;
+  background: #29264f !important;
+}
+
+#chat > button {
+  align-self: flex-start !important;
+  width: auto !important;
+  min-width: 50px;
+  padding: 8px 14px !important;
+}
 
 
 
