@@ -224,6 +224,7 @@ saveMessage(reply, "bot");
     
 
   } catch (error) {
+    loading.classList.remove("typing-indicator");
     loading.textContent = "Error: " + error.message;
   } finally {
     button.disabled = false;
