@@ -469,6 +469,23 @@ button:hover {
     padding: 15px 8px;
   }
 }
+/* Sidebar Open and Close */
+
+.sidebar {
+  transition: 0.3s;
+}
+
+.workspace.sidebar-closed .sidebar {
+  display: none;
+}
+
+.sidebar-toggle {
+  cursor: pointer;
+  font-size: 24px;
+  background: transparent;
+  color: white;
+  border: none;
+}
 
 
 
