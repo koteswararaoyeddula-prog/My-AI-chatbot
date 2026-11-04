@@ -716,13 +716,10 @@ button:hover {
 .new-chat {
   margin-top: 35px !important;
 }
-.new-chat {
+.sidebar .new-chat {
   background: #2563eb !important;
-  color: #ffffff !important;
+  color: white !important;
   border: 2px solid #1d4ed8 !important;
   border-radius: 12px !important;
-  padding: 14px !important;
-  margin-top: 35px !important;
-  box-shadow: 0 3px 10px #2563eb55;
-}
+ }
 
