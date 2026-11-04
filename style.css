@@ -714,4 +714,7 @@ button:hover {
   position: relative !important;
   top: 20px !important;
 }
+.new-chat {
+  margin-top: 35px !important;
+}
 
