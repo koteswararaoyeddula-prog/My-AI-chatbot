@@ -1,25 +1,26 @@
+
 "use strict";
 
 /* =========================================
-   K-ULTRA AI - VERSION 12
-   Complete Chat System
+   K-ULTRA AI - VERSION 13
+   COMPLETE FIXED CHAT SYSTEM
 ========================================= */
 
 const API_URL =
   "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
 
-const $ = id => document.getElementById(id);
-
 const CHAT_KEY = "kUltraConversations";
 const CURRENT_KEY = "kUltraCurrentChatId";
 const THEME_KEY = "kUltraTheme";
+
+const $ = id => document.getElementById(id);
+
+const app = document.querySelector(".app");
 
 const chat = $("chat");
 const input = $("userInput");
 const sendBtn = $("sendBtn");
 const stopBtn = $("stopBtn");
-const imageBtn = $("imageBtn");
-const micBtn = $("micBtn");
 const attachBtn = $("attachBtn");
 const attachMenu = $("attachMenu");
 const photoInput = $("photoInput");
@@ -28,63 +29,75 @@ const fileInput = $("fileInput");
 const filePreview = $("filePreview");
 const searchInput = $("chatSearch");
 
-const app = document.querySelector(".app");
-
 let conversations = [];
-let currentChatId = localStorage.getItem(CURRENT_KEY) || "";
+let currentChatId = "";
 let controller = null;
+
 let selectedFileText = "";
 let selectedFileName = "";
 let selectedImage = "";
 let recognition = null;
 
 /* =========================================
-   SAFE EVENT LISTENER
+   SAFE STORAGE
 ========================================= */
 
-function on(id, event, callback) {
-  const element = $(id);
-
-  if (element) {
-    element.addEventListener(event, callback);
-  }
-
-  return element;
-}
-
-/* =========================================
-   LOAD SAVED CHATS
-========================================= */
-
-try {
-  const saved = JSON.parse(
-    localStorage.getItem(CHAT_KEY) || "[]"
-  );
-
-  conversations = Array.isArray(saved) ? saved : [];
-
-} catch (error) {
-  conversations = [];
-}
-
-/* =========================================
-   STORAGE
-========================================= */
-
-function saveData() {
+function storageGet(key, fallback = "") {
   try {
-    localStorage.setItem(
-      CHAT_KEY,
-      JSON.stringify(conversations)
+    return localStorage.getItem(key) ?? fallback;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function storageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.error("Storage error:", error);
+    return false;
+  }
+}
+
+function loadConversations() {
+  try {
+    const data = JSON.parse(
+      storageGet(CHAT_KEY, "[]")
     );
 
-    localStorage.setItem(
-      CURRENT_KEY,
-      currentChatId
-    );
+    if (!Array.isArray(data)) return [];
+
+    return data.map(item => ({
+      id: String(item.id || Date.now()),
+      title: item.title || "New Chat",
+      messages: Array.isArray(item.messages)
+        ? item.messages
+        : []
+    }));
 
   } catch (error) {
-    alert("Storage full. Please delete some old chats.");
+    console.error("Chat loading error:", error);
+    return [];
+  }
+}
+
+conversations = loadConversations();
+currentChatId = storageGet(CURRENT_KEY, "");
+
+function saveData() {
+  const chatsSaved = storageSet(
+    CHAT_KEY,
+    JSON.stringify(conversations)
+  );
+
+  const currentSaved = storageSet(
+    CURRENT_KEY,
+    currentChatId
+  );
+
+  if (!chatsSaved || !currentSaved) {
+    console.warn("Unable to save all chat data.");
   }
 }
 
@@ -92,6 +105,22 @@ function currentChat() {
   return conversations.find(
     item => item.id === currentChatId
   );
+}
+
+/* =========================================
+   EVENT LISTENER HELPER
+========================================= */
+
+function on(id, event, callback) {
+  const element = $(id);
+
+  if (element) {
+    element.addEventListener(event, callback);
+  } else {
+    console.warn("Element not found:", id);
+  }
+
+  return element;
 }
 
 /* =========================================
@@ -122,6 +151,11 @@ function createConversation() {
     controller.abort();
   }
 
+  controller = null;
+
+  if (sendBtn) sendBtn.disabled = false;
+  if (stopBtn) stopBtn.hidden = true;
+
   const item = {
     id: Date.now().toString(),
     title: "New Chat",
@@ -134,9 +168,13 @@ function createConversation() {
   if (input) input.value = "";
 
   clearAttachments();
+  closeAttachMenu();
+
   saveData();
   renderChat();
   renderChatList();
+
+  if (input) input.focus();
 }
 
 on("newChatBtn", "click", createConversation);
@@ -162,9 +200,7 @@ function renderChatList() {
     : "";
 
   const filtered = conversations.filter(item => {
-    const titleMatch = (item.title || "")
-      .toLowerCase()
-      .includes(query);
+    const title = (item.title || "").toLowerCase();
 
     const messageMatch = item.messages.some(message =>
       (message.content || "")
@@ -172,7 +208,7 @@ function renderChatList() {
         .includes(query)
     );
 
-    return titleMatch || messageMatch;
+    return title.includes(query) || messageMatch;
   });
 
   if (!filtered.length) {
@@ -188,17 +224,25 @@ function renderChatList() {
 
     const open = document.createElement("button");
     open.type = "button";
-    open.className =
-      "open-chat" +
-      (item.id === currentChatId ? " active" : "");
+    open.className = "open-chat";
+
+    if (item.id === currentChatId) {
+      open.classList.add("active");
+    }
 
     open.textContent = item.title || "New Chat";
 
     open.addEventListener("click", () => {
       if (controller) controller.abort();
 
+      controller = null;
+
+      if (sendBtn) sendBtn.disabled = false;
+      if (stopBtn) stopBtn.hidden = true;
+
       currentChatId = item.id;
 
+      clearAttachments();
       saveData();
       renderChat();
       renderChatList();
@@ -222,30 +266,29 @@ function renderChatList() {
 
         if (name && name.trim()) {
           item.title = name.trim().slice(0, 60);
-
           saveData();
           renderChatList();
         }
       }
 
       if (choice?.toLowerCase() === "d") {
-        if (confirm("Delete this chat?")) {
-          conversations = conversations.filter(
-            chatItem => chatItem.id !== item.id
-          );
+        if (!confirm("Delete this chat?")) return;
 
-          if (currentChatId === item.id) {
-            currentChatId =
-              conversations[0]?.id || "";
-          }
+        conversations = conversations.filter(
+          chatItem => chatItem.id !== item.id
+        );
 
-          if (!currentChatId) {
-            createConversation();
-          } else {
-            saveData();
-            renderChat();
-            renderChatList();
-          }
+        if (currentChatId === item.id) {
+          currentChatId =
+            conversations[0]?.id || "";
+        }
+
+        if (!currentChatId) {
+          createConversation();
+        } else {
+          saveData();
+          renderChat();
+          renderChatList();
         }
       }
     });
@@ -258,7 +301,7 @@ function renderChatList() {
 on("chatSearch", "input", renderChatList);
 
 /* =========================================
-   SIDEBAR TOGGLE
+   SIDEBAR
 ========================================= */
 
 on("sidebarToggle", "click", () => {
@@ -317,9 +360,7 @@ async function copyText(text) {
       const copied = document.execCommand("copy");
       area.remove();
 
-      if (!copied) {
-        throw new Error("Copy failed");
-      }
+      if (!copied) throw new Error("Copy failed");
     }
 
     alert("Copied!");
@@ -343,7 +384,6 @@ function speakReply(message, button) {
     speechSynthesis.cancel();
 
     if (button) button.textContent = "🔊";
-
     return;
   }
 
@@ -372,7 +412,7 @@ function speakReply(message, button) {
 }
 
 /* =========================================
-   EDIT USER MESSAGE
+   EDIT MESSAGE
 ========================================= */
 
 function editMessage(index) {
@@ -449,8 +489,8 @@ function addMessage(role, content, image, index) {
 
   if (role === "assistant") {
     actions.appendChild(
-      actionButton("🔊", "Listen", event =>
-        speakReply(content, event.currentTarget)
+      actionButton("🔊", "Listen", button =>
+        speakReply(content, button.currentTarget)
       )
     );
 
@@ -487,8 +527,9 @@ function renderChat() {
   const welcome = $("welcome");
   const suggestions = $("suggestions");
 
-  const hasMessages =
-    !!(conversation && conversation.messages.length);
+  const hasMessages = !!(
+    conversation && conversation.messages.length
+  );
 
   if (welcome) welcome.hidden = hasMessages;
   if (suggestions) suggestions.hidden = hasMessages;
@@ -511,6 +552,10 @@ function renderChat() {
    ATTACHMENT MENU
 ========================================= */
 
+function closeAttachMenu() {
+  if (attachMenu) attachMenu.hidden = true;
+}
+
 on("attachBtn", "click", event => {
   if (!attachMenu) return;
 
@@ -525,22 +570,22 @@ document.addEventListener("click", event => {
     !attachMenu.contains(event.target) &&
     !attachBtn.contains(event.target)
   ) {
-    attachMenu.hidden = true;
+    closeAttachMenu();
   }
 });
 
 on("photoBtn", "click", () => {
-  if (attachMenu) attachMenu.hidden = true;
+  closeAttachMenu();
   if (photoInput) photoInput.click();
 });
 
 on("cameraBtn", "click", () => {
-  if (attachMenu) attachMenu.hidden = true;
+  closeAttachMenu();
   if (cameraInput) cameraInput.click();
 });
 
 on("filesBtn", "click", () => {
-  if (attachMenu) attachMenu.hidden = true;
+  closeAttachMenu();
   if (fileInput) fileInput.click();
 });
 
@@ -612,10 +657,7 @@ on("fileInput", "change", async () => {
   }
 
   try {
-    const ext = file.name
-      .split(".")
-      .pop()
-      .toLowerCase();
+    const ext = file.name.split(".").pop().toLowerCase();
 
     let text = "";
 
@@ -634,7 +676,8 @@ on("fileInput", "change", async () => {
         data: await file.arrayBuffer()
       }).promise;
 
-      for (let pageNumber = 1;
+      for (
+        let pageNumber = 1;
         pageNumber <= pdf.numPages;
         pageNumber++
       ) {
@@ -685,7 +728,10 @@ async function sendMessage(
 ) {
   if (controller) return;
 
-  if (!input || !sendBtn || !stopBtn) return;
+  if (!input || !sendBtn || !stopBtn) {
+    console.error("Composer elements missing.");
+    return;
+  }
 
   let message = (
     customMessage !== null
@@ -746,9 +792,7 @@ async function sendMessage(
   const history = conversation.messages
     .slice(-12)
     .map(item => ({
-      role: item.role === "user"
-        ? "user"
-        : "assistant",
+      role: item.role === "user" ? "user" : "assistant",
       content: item.content
     }));
 
@@ -761,7 +805,6 @@ async function sendMessage(
   const typing = document.createElement("div");
   typing.className =
     "message assistant-message typing-indicator";
-
   typing.textContent = "K-ULTRA AI is thinking...";
 
   if (chat) chat.appendChild(typing);
@@ -769,16 +812,13 @@ async function sendMessage(
   try {
     const response = await fetch(API_URL, {
       method: "POST",
-
       headers: {
         "Content-Type": "application/json"
       },
-
       body: JSON.stringify({
         message,
         history
       }),
-
       signal: requestController.signal
     });
 
@@ -812,14 +852,19 @@ async function sendMessage(
     });
 
   } catch (error) {
-    conversation.messages.push({
-      role: "assistant",
+    if (error.name === "AbortError") {
+      conversation.messages.push({
+        role: "assistant",
+        content: "Generation stopped."
+      });
+    } else {
+      console.error("Chat error:", error);
 
-      content:
-        error.name === "AbortError"
-          ? "Generation stopped."
-          : "Error: " + error.message
-    });
+      conversation.messages.push({
+        role: "assistant",
+        content: "Error: " + error.message
+      });
+    }
 
   } finally {
     if (controller === requestController) {
@@ -838,12 +883,10 @@ async function sendMessage(
 }
 
 /* =========================================
-   SEND BUTTON & ENTER KEY
+   SEND BUTTON & ENTER
 ========================================= */
 
-on("sendBtn", "click", () => {
-  sendMessage();
-});
+on("sendBtn", "click", sendMessage);
 
 if (input) {
   input.addEventListener("keydown", event => {
@@ -868,7 +911,7 @@ on("stopBtn", "click", () => {
 });
 
 /* =========================================
-   IMAGE PROMPT BUTTON
+   IMAGE PROMPT
 ========================================= */
 
 on("imageBtn", "click", () => {
@@ -894,6 +937,8 @@ const SpeechRecognition =
   window.SpeechRecognition ||
   window.webkitSpeechRecognition;
 
+const micBtn = $("micBtn");
+
 if (SpeechRecognition && micBtn) {
   recognition = new SpeechRecognition();
 
@@ -916,9 +961,7 @@ if (SpeechRecognition && micBtn) {
   recognition.onresult = event => {
     if (!input) return;
 
-    input.value =
-      event.results[0][0].transcript;
-
+    input.value = event.results[0][0].transcript;
     input.focus();
   };
 
@@ -935,6 +978,8 @@ if (SpeechRecognition && micBtn) {
     alert("Voice input is not supported in this browser.");
   });
 }
+
+/*
 
 /* =========================================
    EXPORT CHAT
