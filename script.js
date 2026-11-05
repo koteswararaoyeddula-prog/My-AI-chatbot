@@ -641,6 +641,26 @@ function regenerateResponse(userIndex) {
    BUTTON EVENTS
 ===================================== */
 
+/* =====================================
+   GENERATE IMAGE BUTTON
+===================================== */
+
+const imageBtn = document.getElementById("imageBtn");
+
+if (imageBtn) {
+  imageBtn.addEventListener("click", () => {
+    const message = input.value.trim();
+
+    if (!message) {
+      alert("Please describe the image first.");
+      return;
+    }
+
+    input.value = "Generate image: " + message;
+    sendMessage();
+  });
+}
+
 if (button) {
   button.addEventListener("click", sendMessage);
 }
