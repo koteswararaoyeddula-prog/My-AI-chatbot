@@ -161,11 +161,17 @@ function renderChatList() {
 
 searchInput.addEventListener("input", renderChatList);
 
-/* SIDEBAR */
 
-$("sidebarToggle").addEventListener("click", () => {
-  workspace.classList.toggle("sidebar-closed");
+/* SIDEBAR TOGGLE FIX */
+
+const sidebarToggle = $("sidebarToggle");
+const sidebar = $("sidebar");
+const app = document.querySelector(".app");
+
+sidebarToggle.addEventListener("click", () => {
+  app.classList.toggle("sidebar-collapsed");
 });
+
 
 /* SUGGESTIONS */
 
