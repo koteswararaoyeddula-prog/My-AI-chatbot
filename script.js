@@ -973,3 +973,72 @@ if (input) {
 }
 
 /*
+====
+   SEND BUTTON & ENTER
+========================================= */
+
+on("sendBtn", "click", sendMessage);
+
+if (input) {
+  input.addEventListener("keydown", event => {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+}
+
+/* =========================================
+   STOP GENERATION
+========================================= */
+
+on("stopBtn", "click", () => {
+  if (controller) {
+    controller.abort();
+  }
+});
+
+/* =========================================
+   IMAGE PROMPT
+========================================= */
+
+on("imageBtn", "click", () => {
+  if (!input) return;
+
+  const prompt = input.value.trim();
+
+  if (!prompt) {
+    alert("First type an image description.");
+    return;
+  }
+
+  sendMessage(
+    "Please help me create an image: " + prompt
+  );
+});
+
+/* =========================================
+   VOICE INPUT
+========================================= */
+
+const SpeechRecognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+const micBtn = $("micBtn");
+
+if (SpeechRecognition && micBtn) {
+  recognition = new SpeechRecognition();
+
+  recognition.lang = "en-IN";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    micBtn.textContent = "🔴";
+    micBtn.title = "Listening...";
+  };
+   
