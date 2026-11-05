@@ -488,3 +488,23 @@ body.light-mode .welcome h2,
 body.light-mode .welcome p {
   color: #202333 !important;
 }
+
+/* SIDEBAR TOGGLE FIX */
+
+.app.sidebar-collapsed .sidebar {
+  display: none !important;
+}
+
+.app.sidebar-collapsed .main {
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .app.sidebar-collapsed .sidebar {
+    display: none !important;
+  }
+
+  .app:not(.sidebar-collapsed) .sidebar {
+    display: block;
+  }
+}
