@@ -655,3 +655,32 @@ renderChat();
 renderChatList();
 
 console.log("K-ULTRA AI Version 11 ready.");
+
+/* K-ULTRA AI - EXPORT CHAT */
+
+function exportCurrentChat() {
+  const conversation = currentChat();
+
+  if (!conversation || !conversation.messages.length) {
+    alert("No messages to export.");
+    return;
+  }
+
+  const content = conversation.messages.map(message => {
+    const role = message.role === "user" ? "You" : "K-ULTRA AI";
+    return `${role}:\n${message.content}\n`;
+  }).join("\n----------------------\n\n");
+
+  const blob = new Blob([content], {
+    type: "text/plain;charset=utf-8"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = "K-ULTRA-AI-Chat.txt";
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
