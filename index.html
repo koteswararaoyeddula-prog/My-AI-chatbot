@@ -1,195 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <meta name="theme-color" content="#080d25">
-
-  <meta name="description" content="K-ULTRA AI - Your intelligent multilingual AI assistant.">
-
   <title>K-ULTRA AI</title>
-
-  <link rel="stylesheet" href="style.css?v=14">
-
-  <!-- PDF.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-
-  <!-- DOCX Reader -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js" defer></script>
-
-  <!-- JavaScript -->
-  <script src="script.js?v=14" defer></script>
+  <link rel="stylesheet" href="style.css?v=20">
+  <script src="script.js?v=20" defer></script>
 </head>
-
 <body>
 
-  <div class="app">
+  <div class="app" id="app">
 
-    <!-- HEADER -->
     <header class="header">
+      <button id="sidebarToggle" type="button" aria-label="Toggle sidebar">☰</button>
 
-      <button type="button" id="sidebarToggle" title="Toggle sidebar" aria-label="Toggle sidebar">
-        ☰
-      </button>
-
-      <!-- K ONLY LOGO -->
       <div class="logo">K</div>
-
       <div class="brand">K-ULTRA AI</div>
 
       <div class="header-spacer"></div>
 
-      <button type="button" id="headerNewChat" title="New Chat" aria-label="New chat">
-        ＋
-      </button>
-
-      <button type="button" id="exportBtn" title="Export Chat" aria-label="Export chat" onclick="exportCurrentChat()">
-        📥
-      </button>
-
-      <!-- THEME BUTTON -->
-      <button
-        type="button"
-        id="themeToggle"
-        class="theme-toggle"
-        title="Change theme"
-        aria-label="Change theme"
-        aria-pressed="false">
-        ☀️
-      </button>
-
+      <button id="themeToggle" class="theme-toggle"
+        type="button" aria-label="Change theme">☀️</button>
     </header>
 
-    <!-- WORKSPACE -->
     <div class="workspace">
 
-      <!-- SIDEBAR -->
       <aside class="sidebar" id="sidebar">
-
-        <button type="button" id="newChatBtn">
-          ＋ New Chat
-        </button>
+        <button id="newChatBtn" type="button">＋ New Chat</button>
 
         <input
-          type="search"
           id="chatSearch"
-          placeholder="Search conversations..."
-          autocomplete="off">
+          type="search"
+          placeholder="Search chats..."
+          autocomplete="off"
+        >
 
+        <h3>Recent Chats</h3>
         <div id="chatSessions"></div>
-
       </aside>
 
-      <!-- MAIN CHAT -->
       <main class="main">
 
-        <!-- WELCOME -->
         <section id="welcome">
-
           <h1>K-ULTRA AI</h1>
-
-          <p>Hello! Welcome to K-ULTRA AI.</p>
-
-          <p>How can I help you today?</p>
-
+          <p>Your intelligent AI assistant</p>
         </section>
 
-        <!-- SUGGESTIONS -->
-        <section id="suggestions">
+        <div id="chat" aria-live="polite"></div>
 
-          <button type="button" data-prompt="Hello K-ULTRA AI!">
-            👋 Say Hello
-          </button>
+        <div id="suggestions">
+          <button type="button" data-prompt="Hello K-ULTRA AI!">👋 Say Hello</button>
+          <button type="button" data-prompt="Tell me about artificial intelligence">🤖 About AI</button>
+          <button type="button" data-prompt="Explain this in Telugu">తెలుగులో వివరించు</button>
+        </div>
 
-          <button type="button" data-prompt="Explain Artificial Intelligence in simple words.">
-            🧠 Learn AI
-          </button>
-
-          <button type="button" data-prompt="Tell me an interesting fact.">
-            💡 Interesting Fact
-          </button>
-
-          <button type="button" data-prompt="Write a short motivational quote.">
-            ✨ Motivation
-          </button>
-
-        </section>
-
-        <!-- CHAT -->
-        <section id="chat" aria-live="polite" aria-label="Chat messages"></section>
-
-        <!-- COMPOSER -->
-        <div class="composer">
+        <form class="composer" id="chatForm">
 
           <div id="filePreview" hidden></div>
 
-          <!-- ATTACH MENU -->
-          <div id="attachMenu" hidden>
+          <input
+            id="fileInput"
+            type="file"
+            accept=".txt,.md,.png,.jpg,.jpeg"
+            hidden
+          >
 
-            <button type="button" id="photoBtn">
-              🖼️ Choose Photo
-            </button>
-
-            <button type="button" id="cameraBtn">
-              📷 Open Camera
-            </button>
-
-            <button type="button" id="filesBtn">
-              📎 Upload File
-            </button>
-
-          </div>
-
-          <!-- FILE INPUTS -->
-          <input type="file" id="photoInput" accept="image/*" hidden>
-
-          <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
-
-          <input type="file" id="fileInput" accept=".txt,.md,.csv,.pdf,.docx" hidden>
-
-          <!-- MESSAGE INPUT -->
           <textarea
             id="userInput"
             placeholder="Message K-ULTRA AI..."
             rows="1"
-            aria-label="Type your message"></textarea>
+          ></textarea>
 
-          <!-- ACTIONS -->
           <div class="composer-actions">
-
-            <button type="button" id="attachBtn" title="Attach" aria-label="Attach file">
-              📎
-            </button>
-
-            <button type="button" id="imageBtn" title="Image prompt" aria-label="Image prompt">
-              🎨
-            </button>
-
-            <button type="button" id="micBtn" title="Voice input" aria-label="Voice input">
-              🎤
-            </button>
-
-            <div class="header-spacer"></div>
-
-            <button type="button" id="stopBtn" hidden>
-              ⏹ Stop
-            </button>
-
-            <button type="button" id="sendBtn" title="Send message" aria-label="Send message">
-              ➤
-            </button>
-
+            <button id="attachBtn" type="button" aria-label="Attach file">📎</button>
+            <button id="micBtn" type="button" aria-label="Voice input">🎤</button>
+            <button id="stopBtn" type="button" hidden>■ Stop</button>
+            <button id="sendBtn" type="submit">➤ Send</button>
           </div>
 
-        </div>
+        </form>
+
+        <p class="footer-note">K-ULTRA AI can make mistakes. Verify important information.</p>
 
       </main>
-
     </div>
-
   </div>
 
 </body>
