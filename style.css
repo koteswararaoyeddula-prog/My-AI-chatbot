@@ -454,3 +454,26 @@ body {
     max-width: 96%;
   }
 }
+.attach-menu {
+  position: absolute;
+  bottom: 85px;
+  left: 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 15px;
+  padding: 10px;
+  z-index: 9999;
+  box-shadow: 0 5px 20px #0002;
+}
+
+.attach-menu button {
+  display: block;
+  width: 150px;
+  padding: 12px;
+  margin: 5px;
+  background: #f1efff;
+  color: #222;
+  border: none;
+  border-radius: 9px;
+  text-align: left;
+}
