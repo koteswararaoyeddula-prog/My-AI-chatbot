@@ -1041,4 +1041,81 @@ if (SpeechRecognition && micBtn) {
     micBtn.textContent = "🔴";
     micBtn.title = "Listening...";
   };
-   
+   recognition.onresult = event => {
+    const transcript =
+      event.results[0][0].transcript;
+
+    if (input) {
+      input.value +=
+        (input.value ? " " : "") + transcript;
+    }
+  };
+
+  recognition.onerror = event => {
+    console.error("Voice input error:", event.error);
+
+    if (micBtn) micBtn.textContent = "🎤";
+  };
+
+  recognition.onend = () => {
+    if (micBtn) {
+      micBtn.textContent = "🎤";
+      micBtn.title = "Voice input";
+    }
+  };
+
+  micBtn.addEventListener("click", () => {
+    try {
+      if (input) {
+        recognition.lang =
+          /[\u0C00-\u0C7F]/.test(input.value)
+            ? "te-IN"
+            : "en-IN";
+      }
+
+      recognition.start();
+
+    } catch (error) {
+      console.error("Microphone error:", error);
+    }
+  });
+
+} else if (micBtn) {
+  micBtn.addEventListener("click", () => {
+    alert("Voice input is not supported in this browser.");
+  });
+}
+
+/* =========================================
+   INITIALIZE APP
+========================================= */
+
+function initializeApp() {
+  if (!currentChat()) {
+    if (conversations.length) {
+      currentChatId = conversations[0].id;
+    } else {
+      const firstChat = {
+        id: Date.now().toString(),
+        title: "New Chat",
+        messages: []
+      };
+
+      conversations.unshift(firstChat);
+      currentChatId = firstChat.id;
+    }
+  }
+
+  saveData();
+
+  renderChat();
+  renderChatList();
+
+  console.log("K-ULTRA AI VERSION 14 initialized.");
+}
+
+initializeApp();
+
+/* =========================================
+   END OF VERSION 14
+========================================= */
