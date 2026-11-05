@@ -473,27 +473,14 @@ button {
 /* LIGHT MODE */
 
 body.light-mode {
-  background: #f4f5fa;
-  color: #202333;
+  background: #f4f5fa !important;
+  color: #202333 !important;
 }
 
 body.light-mode .app,
 body.light-mode .main,
+body.light-mode .sidebar,
 body.light-mode #chat {
-  background: #ffffff;
-  color: #202333;
-}
-
-body.light-mode .sidebar {
-  background: #f4f5fa;
-}
-
-body.light-mode .bot-message {
-  background: #eeeeF5;
-  color: #17172b;
-}
-
-body.light-mode .user-message {
-  background: #17182b;
-  color: white;
+  background: #ffffff !important;
+  color: #202333 !important;
 }
