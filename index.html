@@ -119,24 +119,23 @@
     <!-- PLUS MENU -->
     <div class="plus-container">
 
-      <button id="plusBtn" type="button"
-        aria-label="Open attachments menu">
-        ＋
-      </button>
+      
+      <button type="button" id="attachBtn">＋</button>
 
-      <div id="plusMenu" class="plus-menu" hidden>
+<div id="attachMenu" class="attach-menu" style="display:none;">
+  <button type="button" id="photoBtn">🖼️ Photos</button>
+  <button type="button" id="cameraBtn">📷 Camera</button>
+  <button type="button" id="filesBtn">📁 Files</button>
+</div>
 
-        <button type="button" id="photosBtn">
-          🖼️ Photos
-        </button>
+<input type="file" id="photoInput"
+accept="image/*" hidden>
 
-        <button type="button" id="cameraBtn">
-          📷 Camera
-        </button>
+<input type="file" id="cameraInput"
+accept="image/*" capture="environment" hidden>
 
-        <button type="button" id="attachBtn">
-          📁 Files
-        </button>
+<input type="file" id="fileInput"
+accept=".txt,.md,.pdf,.doc,.docx" hidden>
 
         <button type="button" id="imageBtn">
           🎨 Generate Image
