@@ -430,3 +430,22 @@ body.light-mode .suggestions button {
   background: #e9ebf4 !important;
   color: #202333 !important;
 }
+
+/* FINAL THEME BACKGROUND TEST */
+
+body.light-mode {
+  background-color: #f4f5fa !important;
+}
+
+body.light-mode .app {
+  background-color: #f4f5fa !important;
+}
+
+body.light-mode .header,
+body.light-mode .sidebar,
+body.light-mode .main,
+body.light-mode .composer,
+body.light-mode #chat {
+  background-color: #ffffff !important;
+  color: #202333 !important;
+}
