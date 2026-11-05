@@ -717,38 +717,39 @@ function exportCurrentChat() {
 
   URL.revokeObjectURL(url);
   }
-/* =====================================
-   K-ULTRA AI THEME SWITCH
-===================================== */
+/* K-ULTRA AI THEME FIX */
 
-const themeToggle = document.getElementById("themeToggle");
+document.addEventListener("DOMContentLoaded", function () {
 
-// Load saved theme
-const savedTheme = localStorage.getItem("kUltraTheme");
+  const themeToggle = document.getElementById("themeToggle");
 
-if (savedTheme === "light") {
-  document.body.classList.add("light-mode");
-  themeToggle.textContent = "🌙";
-} else {
-  document.body.classList.remove("light-mode");
-  themeToggle.textContent = "☀️";
-}
+  if (!themeToggle) {
+    console.log("Theme button not found");
+    return;
+  }
 
-// Toggle theme
-if (themeToggle) {
-  themeToggle.addEventListener("click", () => {
+  function updateTheme() {
+    const isLight = document.body.classList.contains("light-mode");
+
+    themeToggle.textContent = isLight ? "🌙" : "☀️";
+    localStorage.setItem("kUltraTheme", isLight ? "light" : "dark");
+  }
+
+  const savedTheme = localStorage.getItem("kUltraTheme");
+
+  document.body.classList.toggle(
+    "light-mode",
+    savedTheme === "light"
+  );
+
+  updateTheme();
+
+  themeToggle.addEventListener("click", function () {
 
     document.body.classList.toggle("light-mode");
 
-    const isLight =
-      document.body.classList.contains("light-mode");
+    updateTheme();
 
-    localStorage.setItem(
-      "kUltraTheme",
-      isLight ? "light" : "dark"
-    );
-
-    themeToggle.textContent =
-      isLight ? "🌙" : "☀️";
   });
-}
+
+});
