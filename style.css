@@ -420,3 +420,13 @@ button {
     max-width: 96%;
   }
 }
+/* FIX: AI message blinking */
+.message {
+  animation: none !important;
+  transition: none !important;
+}
+
+.message.ai {
+  animation: none !important;
+  opacity: 1 !important;
+}
