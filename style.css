@@ -449,3 +449,42 @@ body.light-mode #chat {
   background-color: #ffffff !important;
   color: #202333 !important;
 }
+
+/* K-ULTRA AI - CHAT LIGHT MODE FIX */
+
+body.light-mode #chat {
+  background: #f4f5fa !important;
+  color: #202333 !important;
+}
+
+body.light-mode #chat .message {
+  color: #202333 !important;
+  border-color: #dfe2ed !important;
+}
+
+body.light-mode #chat .bot-message {
+  background: #ffffff !important;
+  color: #202333 !important;
+}
+
+body.light-mode #chat .user-message {
+  background: #7045e8 !important;
+  color: #ffffff !important;
+}
+
+body.light-mode #chat .message button {
+  background: #e8eaf3 !important;
+  color: #202333 !important;
+}
+
+body.light-mode .welcome,
+body.light-mode .suggestions {
+  background: #f4f5fa !important;
+  color: #202333 !important;
+}
+
+body.light-mode .welcome h1,
+body.light-mode .welcome h2,
+body.light-mode .welcome p {
+  color: #202333 !important;
+}
