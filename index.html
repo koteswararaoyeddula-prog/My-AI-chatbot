@@ -2,199 +2,207 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <meta name="theme-color" content="#151725">
-  <meta name="description" content="K-ULTRA AI - Your intelligent AI assistant">
+
+  <meta name="description" content="K-ULTRA AI Intelligent Assistant">
 
   <title>K-ULTRA AI</title>
 
-  <link rel="stylesheet" href="style.css?v=10">
-  <script src="script.js?v=10" defer></script>
+  <!-- PDF SUPPORT -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- WORD SUPPORT -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js"></script>
+
+  <link rel="stylesheet" href="style.css?v=11">
+  <script src="script.js?v=11" defer></script>
 </head>
 
 <body>
 
-  <div class="app">
+<div class="app">
 
-    <!-- HEADER -->
-    <header class="header">
+  <!-- HEADER -->
+  <header class="header">
 
-      <button
-        type="button"
-        id="sidebarToggle"
-        class="sidebar-toggle"
-        aria-label="Toggle sidebar"
-      >☰</button>
+    <button id="sidebarToggle" type="button">☰</button>
 
-      <div class="logo">K<span>✦</span></div>
+    <div class="logo">K✦</div>
 
-      <div class="brand">
-        <h2>K-ULTRA AI</h2>
-        <p>
-          <span class="online"></span>
-          AI is online
+    <div class="brand">
+      <h2>K-ULTRA AI</h2>
+      <p><span class="online"></span> AI is online</p>
+    </div>
+
+    <button id="newChatBtn" type="button" class="header-new-chat">
+      ＋
+    </button>
+
+  </header>
+
+  <!-- WORKSPACE -->
+  <div class="workspace">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+      <button id="newChatBtnSide" type="button"
+        onclick="createNewChat()">
+        ＋ New Chat
+      </button>
+
+      <input
+        type="search"
+        id="chatSearch"
+        placeholder="🔍 Search chats..."
+      >
+
+      <div id="chatSessions"></div>
+
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- WELCOME -->
+      <section class="welcome">
+
+        <div class="orb">✦</div>
+
+        <h1>Beyond Intelligence.</h1>
+
+        <h2>Welcome to K-ULTRA AI</h2>
+
+        <p>Your ideas. Your world. Your AI.</p>
+
+        <p class="telugu">
+          నమస్కారం! నేను మీ K-ULTRA AI.
         </p>
-      </div>
 
-    </header>
+      </section>
 
-    <!-- WORKSPACE -->
-    <div class="workspace">
+      <!-- SUGGESTIONS -->
+      <section class="suggestions">
 
-      <!-- SIDEBAR -->
-      <aside class="sidebar">
-
-        <button
-          type="button"
-          class="new-chat"
-          id="newChatBtn"
-        >
-          ＋ New Chat
+        <button type="button"
+          onclick="sendSuggestion('Explain something interesting')">
+          ✧ Explore ideas
         </button>
 
-        <input
-          type="search"
-          id="chatSearch"
-          class="chat-search"
-          placeholder="🔍 Search chats..."
-        >
+        <button type="button"
+          onclick="sendSuggestion('Teach me something new')">
+          ✧ Learn something
+        </button>
 
-        <div id="chatSessions"></div>
+        <button type="button"
+          onclick="sendSuggestion('Write a creative story')">
+          ✧ Create a story
+        </button>
 
-      </aside>
+      </section>
 
-      <!-- MAIN CHAT -->
-      <main class="main">
+      <!-- CHAT -->
+      <div id="chat" aria-live="polite"></div>
 
-        <!-- WELCOME -->
-        <section class="welcome">
+    </main>
 
-          <div class="orb">✦</div>
+  </div>
 
-          <h1>Beyond Intelligence.</h1>
+  <!-- FILE PREVIEW -->
+  <div id="filePreview" class="file-preview"></div>
 
-          <h2>Welcome to K-ULTRA AI</h2>
+  <!-- COMPOSER -->
+  <footer class="composer">
 
-          <p>Your ideas. Your world. Your AI.</p>
+    <!-- PLUS MENU -->
+    <div class="plus-container">
 
-          <p class="telugu">
-            నమస్కారం! నేను మీ K-ULTRA AI.
-          </p>
+      <button id="plusBtn" type="button"
+        aria-label="Open attachments menu">
+        ＋
+      </button>
 
-        </section>
+      <div id="plusMenu" class="plus-menu" hidden>
 
-        <!-- SUGGESTIONS -->
-        <section class="suggestions">
+        <button type="button" id="photosBtn">
+          🖼️ Photos
+        </button>
 
-          <button
-            type="button"
-            onclick="sendSuggestion('Explain something interesting')"
-          >
-            ✧ Explore ideas
-          </button>
+        <button type="button" id="cameraBtn">
+          📷 Camera
+        </button>
 
-          <button
-            type="button"
-            onclick="sendSuggestion('Teach me something new')"
-          >
-            ✧ Learn something
-          </button>
+        <button type="button" id="attachBtn">
+          📁 Files
+        </button>
 
-          <button
-            type="button"
-            onclick="sendSuggestion('Write a creative story')"
-          >
-            ✧ Create a story
-          </button>
+        <button type="button" id="imageBtn">
+          🎨 Generate Image
+        </button>
 
-        </section>
-
-        <!-- MESSAGES -->
-        <div id="chat" aria-live="polite"></div>
-
-      </main>
+      </div>
 
     </div>
 
-    <!-- FILE PREVIEW -->
-    <div
-      id="filePreview"
-      class="file-preview"
-      style="display:none;"
-    ></div>
+    <!-- PHOTO INPUT -->
+    <input
+      type="file"
+      id="photoInput"
+      accept="image/*"
+      hidden
+    >
 
-    <!-- MESSAGE COMPOSER -->
-    <footer class="composer">
+    <!-- CAMERA INPUT -->
+    <input
+      type="file"
+      id="cameraInput"
+      accept="image/*"
+      capture="environment"
+      hidden
+    >
 
-      <button
-        type="button"
-        id="attachBtn"
-        title="Attach file"
-        aria-label="Attach file"
-      >
-        📎
-      </button>
+    <!-- FILE INPUT -->
+    <input
+      type="file"
+      id="fileInput"
+      accept=".txt,.md,.csv,.pdf,.doc,.docx"
+      hidden
+    >
 
-      <input
-        type="file"
-        id="fileInput"
-        accept=".txt,.md"
-        hidden
-      >
+    <!-- MESSAGE INPUT -->
+    <textarea
+      id="userInput"
+      rows="1"
+      placeholder="Message K-ULTRA AI..."
+    ></textarea>
 
-      <input
-        type="text"
-        id="userInput"
-        placeholder="Message K-ULTRA AI..."
-        autocomplete="off"
-      >
+    <!-- VOICE -->
+    <button id="micBtn" type="button"
+      title="Voice input">
+      🎤
+    </button>
 
-      <button
-        type="button"
-        id="micBtn"
-        title="Voice input"
-      >
-        🎤
-      </button>
+    <!-- SEND -->
+    <button id="sendBtn" type="button"
+      title="Send message">
+      ➤
+    </button>
 
-      <button
-        type="button"
-        id="imageBtn"
-        title="Generate image"
-      >
-        🎨
-      </button>
+    <!-- STOP -->
+    <button id="stopBtn" type="button"
+      style="display:none;">
+      ⏹
+    </button>
 
-      <button
-        type="button"
-        id="sendBtn"
-        title="Send message"
-      >
-        ➤
-      </button>
+  </footer>
 
-      <button
-        type="button"
-        id="stopBtn"
-        class="stop-button"
-        style="display:none;"
-      >
-        ⏹ Stop
-      </button>
+  <p class="footer-note">
+    POWERED BY K-ULTRA AI ✦
+  </p>
 
-    </footer>
-
-    <!-- FOOTER -->
-    <p class="footer-note">
-      POWERED BY K-ULTRA AI ✦
-    </p>
-
-  </div>
+</div>
 
 </body>
 </html>
