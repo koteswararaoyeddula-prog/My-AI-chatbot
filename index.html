@@ -3,205 +3,86 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#151725">
-
-  <meta name="description" content="K-ULTRA AI Intelligent Assistant">
+  <meta name="description" content="K-ULTRA AI Assistant">
 
   <title>K-ULTRA AI</title>
 
-  <!-- PDF SUPPORT -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-  <!-- WORD SUPPORT -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js"></script>
 
   <link rel="stylesheet" href="style.css?v=11">
-  <script src="script.js?v=11" defer></script>
+  <script defer src="script.js?v=11"></script>
 </head>
 
 <body>
-
 <div class="app">
 
-  <!-- HEADER -->
   <header class="header">
-
-    <button id="sidebarToggle" type="button">☰</button>
-
+    <button id="sidebarToggle" class="icon-btn" type="button">☰</button>
     <div class="logo">K✦</div>
-
     <div class="brand">
       <h2>K-ULTRA AI</h2>
       <p><span class="online"></span> AI is online</p>
     </div>
-
-    <button id="newChatBtn" type="button" class="header-new-chat">
-      ＋
-    </button>
-
+    <button id="headerNewChat" class="icon-btn" type="button">＋</button>
   </header>
 
-  <!-- WORKSPACE -->
   <div class="workspace">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-
-      <button id="newChatBtnSide" type="button"
-        onclick="createNewChat()">
-        ＋ New Chat
-      </button>
-
-      <input
-        type="search"
-        id="chatSearch"
-        placeholder="🔍 Search chats..."
-      >
-
+    <aside class="sidebar" id="sidebar">
+      <button id="newChatBtn" class="new-chat" type="button">＋ New Chat</button>
+      <input id="chatSearch" type="search" placeholder="🔍 Search chats...">
       <div id="chatSessions"></div>
-
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
-
-      <!-- WELCOME -->
-      <section class="welcome">
-
+      <section class="welcome" id="welcome">
         <div class="orb">✦</div>
-
         <h1>Beyond Intelligence.</h1>
-
         <h2>Welcome to K-ULTRA AI</h2>
-
         <p>Your ideas. Your world. Your AI.</p>
-
-        <p class="telugu">
-          నమస్కారం! నేను మీ K-ULTRA AI.
-        </p>
-
+        <p class="telugu">నమస్కారం! నేను మీ K-ULTRA AI.</p>
       </section>
 
-      <!-- SUGGESTIONS -->
-      <section class="suggestions">
-
-        <button type="button"
-          onclick="sendSuggestion('Explain something interesting')">
-          ✧ Explore ideas
-        </button>
-
-        <button type="button"
-          onclick="sendSuggestion('Teach me something new')">
-          ✧ Learn something
-        </button>
-
-        <button type="button"
-          onclick="sendSuggestion('Write a creative story')">
-          ✧ Create a story
-        </button>
-
+      <section class="suggestions" id="suggestions">
+        <button type="button" data-prompt="Explain something interesting">✧ Explore ideas</button>
+        <button type="button" data-prompt="Teach me something new">✧ Learn something</button>
+        <button type="button" data-prompt="Write a creative story">✧ Create a story</button>
       </section>
 
-      <!-- CHAT -->
       <div id="chat" aria-live="polite"></div>
-
     </main>
-
   </div>
 
-  <!-- FILE PREVIEW -->
-  <div id="filePreview" class="file-preview"></div>
+  <div id="filePreview" class="file-preview" hidden></div>
 
-  <!-- COMPOSER -->
   <footer class="composer">
 
-    <!-- PLUS MENU -->
     <div class="plus-container">
+      <button id="attachBtn" class="plus-btn" type="button" aria-label="Attachments">＋</button>
 
-      
-      <button type="button" id="attachBtn">＋</button>
-
-<div id="attachMenu" class="attach-menu" style="display:none;">
-  <button type="button" id="photoBtn">🖼️ Photos</button>
-  <button type="button" id="cameraBtn">📷 Camera</button>
-  <button type="button" id="filesBtn">📁 Files</button>
-</div>
-
-<input type="file" id="photoInput"
-accept="image/*" hidden>
-
-<input type="file" id="cameraInput"
-accept="image/*" capture="environment" hidden>
-
-<input type="file" id="fileInput"
-accept=".txt,.md,.pdf,.doc,.docx" hidden>
-
-        <button type="button" id="imageBtn">
-          🎨 Generate Image
-        </button>
-
+      <div id="attachMenu" class="attach-menu" hidden>
+        <button id="photoBtn" type="button">🖼️ Photos</button>
+        <button id="cameraBtn" type="button">📷 Camera</button>
+        <button id="filesBtn" type="button">📁 Files</button>
       </div>
-
     </div>
 
-    <!-- PHOTO INPUT -->
-    <input
-      type="file"
-      id="photoInput"
-      accept="image/*"
-      hidden
-    >
+    <input id="photoInput" type="file" accept="image/*" hidden>
+    <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+    <input id="fileInput" type="file" accept=".txt,.md,.csv,.pdf,.docx" hidden>
 
-    <!-- CAMERA INPUT -->
-    <input
-      type="file"
-      id="cameraInput"
-      accept="image/*"
-      capture="environment"
-      hidden
-    >
+    <textarea id="userInput" rows="1" placeholder="Message K-ULTRA AI..."></textarea>
 
-    <!-- FILE INPUT -->
-    <input
-      type="file"
-      id="fileInput"
-      accept=".txt,.md,.csv,.pdf,.doc,.docx"
-      hidden
-    >
-
-    <!-- MESSAGE INPUT -->
-    <textarea
-      id="userInput"
-      rows="1"
-      placeholder="Message K-ULTRA AI..."
-    ></textarea>
-
-    <!-- VOICE -->
-    <button id="micBtn" type="button"
-      title="Voice input">
-      🎤
-    </button>
-
-    <!-- SEND -->
-    <button id="sendBtn" type="button"
-      title="Send message">
-      ➤
-    </button>
-
-    <!-- STOP -->
-    <button id="stopBtn" type="button"
-      style="display:none;">
-      ⏹
-    </button>
-
+    <button id="micBtn" class="icon-btn" type="button" title="Voice input">🎤</button>
+    <button id="imageBtn" class="icon-btn" type="button" title="Image prompt">🎨</button>
+    <button id="sendBtn" class="send-btn" type="button">➤</button>
+    <button id="stopBtn" class="stop-btn" type="button" hidden>⏹</button>
   </footer>
 
-  <p class="footer-note">
-    POWERED BY K-ULTRA AI ✦
-  </p>
-
+  <p class="footer-note">POWERED BY K-ULTRA AI ✦</p>
 </div>
-
 </body>
 </html>
