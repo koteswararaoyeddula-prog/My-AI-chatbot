@@ -943,4 +943,67 @@ if (SpeechRecognition && micBtn) {
 function exportCurrentChat() {
   const conversation = currentChat();
 
-  if (!conversation || !conversati
+  if (!conversation || !conversation.messages.length) {
+    alert("No chat available to export.");
+    return;
+  }
+
+  const content = conversation.messages
+    .map(item => {
+      const role =
+        item.role === "user" ? "You" : "K-ULTRA AI";
+
+      return role + ":\n" + (item.content || "");
+    })
+    .join("\n\n--------------------\n\n");
+
+  const blob = new Blob(
+    [content],
+    { type: "text/plain;charset=utf-8" }
+  );
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download =
+    (conversation.title || "K-ULTRA-chat")
+      .replace(/[^\w-]/g, "_") + ".txt";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+window.exportCurrentChat = exportCurrentChat;
+function initializeApp() {
+  console.log("K-ULTRA AI Version 13 starting...");
+
+  if (!currentChat()) {
+    if (conversations.length) {
+      currentChatId = conversations[0].id;
+    } else {
+      const firstChat = {
+        id: Date.now().toString(),
+        title: "New Chat",
+        messages: []
+      };
+
+      conversations.unshift(firstChat);
+      currentChatId = firstChat.id;
+    }
+  }
+
+  initializeTheme();
+
+  saveData();
+  renderChat();
+  renderChatList();
+
+  if (stopBtn) stopBtn.hidden = true;
+
+  console.log("K-ULTRA AI Version 13 ready!");
+}
+initializeApp();
