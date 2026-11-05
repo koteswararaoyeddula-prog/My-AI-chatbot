@@ -843,3 +843,48 @@ document.getElementById("filesBtn").onclick = () => {
   fileInput.click();
   attachMenu.style.display = "none";
 };
+/* K-ULTRA AI PHOTO ATTACHMENT */
+
+let selectedImageData = null;
+
+function handleImageSelection(file) {
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    alert("Please select an image.");
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Image must be smaller than 5 MB.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function () {
+    selectedImageData = reader.result;
+
+    const preview = document.getElementById("filePreview");
+
+    preview.innerHTML = "";
+
+    const img = document.createElement("img");
+    img.src = selectedImageData;
+    img.style.width = "130px";
+    img.style.borderRadius = "12px";
+
+    preview.appendChild(img);
+    preview.style.display = "block";
+  };
+
+  reader.readAsDataURL(file);
+}
+
+photoInput.addEventListener("change", function () {
+  handleImageSelection(this.files[0]);
+});
+
+cameraInput.addEventListener("change", function () {
+  handleImageSelection(this.files[0]);
+});
