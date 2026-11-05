@@ -1115,7 +1115,9 @@ function initializeApp() {
 }
 
 initializeApp();
-
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("K-ULTRA AI JavaScript loaded successfully");
+});
 /* =========================================
    END OF VERSION 14
 ========================================= */
