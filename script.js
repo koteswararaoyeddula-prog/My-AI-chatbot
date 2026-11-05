@@ -817,3 +817,29 @@ renderChatList();
 
 console.log("K-ULTRA AI initialized successfully.");
        
+const attachMenu = document.getElementById("attachMenu");
+
+const photoInput = document.getElementById("photoInput");
+const cameraInput = document.getElementById("cameraInput");
+
+attachBtn.addEventListener("click", () => {
+  attachMenu.style.display =
+    attachMenu.style.display === "block"
+      ? "none"
+      : "block";
+});
+
+document.getElementById("photoBtn").onclick = () => {
+  photoInput.click();
+  attachMenu.style.display = "none";
+};
+
+document.getElementById("cameraBtn").onclick = () => {
+  cameraInput.click();
+  attachMenu.style.display = "none";
+};
+
+document.getElementById("filesBtn").onclick = () => {
+  fileInput.click();
+  attachMenu.style.display = "none";
+};
