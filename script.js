@@ -1,11 +1,21 @@
 
+/* =====================================
+   K-ULTRA AI - ADVANCED CHAT SYSTEM
+===================================== */
+
 const input = document.getElementById("userInput");
 const button = document.getElementById("sendBtn");
 const chat = document.getElementById("chat");
 const newChatBtn = document.getElementById("newChatBtn");
 const stopBtn = document.getElementById("stopBtn");
+const micBtn = document.getElementById("micBtn");
+const sidebarToggle = document.getElementById("sidebarToggle");
+const workspace = document.querySelector(".workspace");
 
-let abortController = null;
+const fileInput = document.getElementById("fileInput");
+const attachBtn = document.getElementById("attachBtn");
+const filePreview = document.getElementById("filePreview");
+const chatSearch = document.getElementById("chatSearch");
 
 const API_URL =
   "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
@@ -13,36 +23,37 @@ const API_URL =
 const CHAT_KEY = "kUltraConversations";
 const CURRENT_KEY = "kUltraCurrentChatId";
 
-let conversations = JSON.parse(
-  localStorage.getItem(CHAT_KEY) || "[]"
-);
+let abortController = null;
+let selectedFileText = "";
+let selectedFileName = "";
 
-let currentChatId = localStorage.getItem(CURRENT_KEY);
-
-// Old chat history migration
-if (conversations.length === 0) {
-  const oldHistory = JSON.parse(
-    localStorage.getItem("kUltraChatHistory") || "[]"
-  );
-
-  if (oldHistory.length > 0) {
-    conversations.push({
-      id: Date.now().toString(),
-      title: "Previous Chat",
-      messages: oldHistory
-    });
-
-    localStorage.removeItem("kUltraChatHistory");
+function loadConversations() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CHAT_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
   }
 }
 
-function saveConversations() {
-  localStorage.setItem(
-    CHAT_KEY,
-    JSON.stringify(conversations)
-  );
+let conversations = loadConversations();
+let currentChatId = localStorage.getItem(CURRENT_KEY) || "";
 
-  localStorage.setItem(CURRENT_KEY, currentChatId || "");
+/* =====================================
+   SAVE AND LOAD
+===================================== */
+
+function saveConversations() {
+  try {
+    localStorage.setItem(CHAT_KEY, JSON.stringify(conversations));
+    localStorage.setItem(CURRENT_KEY, currentChatId || "");
+  } catch (error) {
+    alert("Chat storage is full. Try deleting old chats or large images.");
+  }
+}
+
+function getCurrentChat() {
+  return conversations.find(item => item.id === currentChatId);
 }
 
 function createConversation() {
@@ -60,97 +71,139 @@ function createConversation() {
   renderChatList();
 }
 
-function getCurrentChat() {
-  return conversations.find(
-    item => item.id === currentChatId
-  );
-}
-
-// Previous chats container
-let chatSessions = document.getElementById("chatSessions");
-
-if (!chatSessions) {
-  chatSessions = document.createElement("div");
-  chatSessions.id = "chatSessions";
-  chat.parentNode.insertBefore(chatSessions, chat);
-}
-
-// Delete conversation
-function deleteConversation(chatId) {
-  const conversation = conversations.find(
-    item => item.id === chatId
-  );
-
+function saveMessage(message, sender, image = null) {
+  const conversation = getCurrentChat();
   if (!conversation) return;
 
-  const confirmed = confirm(
-    `Delete "${conversation.title}"?`
-  );
+  conversation.messages.push({
+    message,
+    sender,
+    ...(image ? { image } : {})
+  });
 
-  if (!confirmed) return;
-
-  conversations = conversations.filter(
-    item => item.id !== chatId
-  );
-
-  if (currentChatId === chatId) {
-    if (conversations.length > 0) {
-      currentChatId = conversations[0].id;
-    } else {
-      currentChatId = "";
-      saveConversations();
-      createConversation();
-      return;
-    }
+  if (conversation.title === "New Chat" && sender === "user") {
+    conversation.title = message.slice(0, 25);
   }
 
   saveConversations();
-  renderChat();
   renderChatList();
 }
 
-// Render previous chats
+/* =====================================
+   OLD CHAT MIGRATION
+===================================== */
+
+if (conversations.length === 0) {
+  try {
+    const oldHistory = JSON.parse(
+      localStorage.getItem("kUltraChatHistory") || "[]"
+    );
+
+    if (oldHistory.length > 0) {
+      conversations.push({
+        id: Date.now().toString(),
+        title: "Previous Chat",
+        messages: oldHistory
+      });
+
+      localStorage.removeItem("kUltraChatHistory");
+    }
+  } catch (error) {
+    console.log("Old chat migration skipped.");
+  }
+}
+
+/* =====================================
+   RENDER CHAT LIST + SEARCH
+===================================== */
+
 function renderChatList() {
+  const chatSessions = document.getElementById("chatSessions");
+  if (!chatSessions) return;
+
   chatSessions.innerHTML = "<h3>Previous Chats</h3>";
 
-  conversations.forEach(conversation => {
+  const searchText = chatSearch
+    ? chatSearch.value.toLowerCase().trim()
+    : "";
+
+  const filtered = conversations.filter(conversation => {
+    const title = (conversation.title || "").toLowerCase();
+
+    const messageMatch = (conversation.messages || []).some(item =>
+      (item.message || "").toLowerCase().includes(searchText)
+    );
+
+    return title.includes(searchText) || messageMatch;
+  });
+
+  if (filtered.length === 0) {
+    const empty = document.createElement("p");
+    empty.textContent = "No chats found.";
+    empty.style.fontSize = "12px";
+    empty.style.color = "#777";
+    chatSessions.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach(conversation => {
     const item = document.createElement("button");
 
-    item.textContent = conversation.title;
+    item.textContent = conversation.title || "New Chat";
     item.style.display = "block";
     item.style.width = "100%";
     item.style.padding = "10px";
     item.style.margin = "5px 0";
     item.style.borderRadius = "10px";
-    item.style.background = "#183451";
+    item.style.background =
+      conversation.id === currentChatId ? "#2563eb" : "#183451";
     item.style.color = "white";
     item.style.border = "1px solid #343078";
     item.style.userSelect = "none";
-    item.style.touchAction = "none";
+    item.style.touchAction = "pan-y";
 
-    let longPressTimer = null;
-    let longPressTriggered = false;
+    let timer = null;
+    let longPressed = false;
 
-    function showDeleteOption() {
-      const oldMenu = chatSessions.querySelector(
-        ".chat-delete-menu"
-      );
-
+    function showMenu() {
+      const oldMenu = chatSessions.querySelector(".chat-menu");
       if (oldMenu) oldMenu.remove();
 
       const menu = document.createElement("div");
-      menu.className = "chat-delete-menu";
-      menu.style.padding = "8px";
-      menu.style.margin = "0 0 8px 0";
-      menu.style.background = "#20283c";
-      menu.style.borderRadius = "10px";
+      menu.className = "chat-menu";
+      menu.style.display = "flex";
+      menu.style.gap = "5px";
+      menu.style.marginBottom = "8px";
+
+      const renameBtn = document.createElement("button");
+      renameBtn.textContent = "✏️ Rename";
+      renameBtn.style.background = "#2563eb";
+      renameBtn.style.color = "white";
+      renameBtn.style.padding = "8px";
+      renameBtn.style.border = "none";
+      renameBtn.style.borderRadius = "8px";
+
+      renameBtn.addEventListener("click", event => {
+        event.stopPropagation();
+
+        const newName = prompt(
+          "Enter new chat name:",
+          conversation.title
+        );
+
+        if (newName && newName.trim()) {
+          conversation.title = newName.trim().slice(0, 50);
+          saveConversations();
+          renderChatList();
+        }
+      });
 
       const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "🗑️ Delete Chat";
-      deleteBtn.style.background = "#c62828";
+      deleteBtn.textContent = "🗑️ Delete";
+      deleteBtn.style.background = "#dc2626";
       deleteBtn.style.color = "white";
+      deleteBtn.style.padding = "8px";
       deleteBtn.style.border = "none";
-      deleteBtn.style.padding = "10px 14px";
       deleteBtn.style.borderRadius = "8px";
 
       deleteBtn.addEventListener("click", event => {
@@ -158,40 +211,31 @@ function renderChatList() {
         deleteConversation(conversation.id);
       });
 
-      menu.appendChild(deleteBtn);
+      menu.append(renameBtn, deleteBtn);
       item.insertAdjacentElement("afterend", menu);
     }
 
-    // Android long press
     item.addEventListener("touchstart", () => {
-      longPressTimer = setTimeout(() => {
-        longPressTriggered = true;
-        showDeleteOption();
-      }, 600);
+      longPressed = false;
+
+      timer = setTimeout(() => {
+        longPressed = true;
+        showMenu();
+      }, 650);
     }, { passive: true });
 
-    item.addEventListener("touchend", () => {
-      clearTimeout(longPressTimer);
-    });
+    item.addEventListener("touchend", () => clearTimeout(timer));
+    item.addEventListener("touchmove", () => clearTimeout(timer));
+    item.addEventListener("touchcancel", () => clearTimeout(timer));
 
-    item.addEventListener("touchmove", () => {
-      clearTimeout(longPressTimer);
-    });
-
-    item.addEventListener("touchcancel", () => {
-      clearTimeout(longPressTimer);
-    });
-
-    // Computer right click
     item.addEventListener("contextmenu", event => {
       event.preventDefault();
-      showDeleteOption();
+      showMenu();
     });
 
-    // Open chat
     item.addEventListener("click", () => {
-      if (longPressTriggered) {
-        longPressTriggered = false;
+      if (longPressed) {
+        longPressed = false;
         return;
       }
 
@@ -205,12 +249,41 @@ function renderChatList() {
   });
 }
 
-// Add generated image to message
+function deleteConversation(chatId) {
+  const conversation = conversations.find(item => item.id === chatId);
+  if (!conversation) return;
+
+  if (!confirm(`Delete "${conversation.title}"?`)) return;
+
+  conversations = conversations.filter(item => item.id !== chatId);
+
+  if (currentChatId === chatId) {
+    currentChatId = conversations.length ? conversations[0].id : "";
+  }
+
+  if (!currentChatId) {
+    saveConversations();
+    createConversation();
+    return;
+  }
+
+  saveConversations();
+  renderChat();
+  renderChatList();
+}
+
+if (chatSearch) {
+  chatSearch.addEventListener("input", renderChatList);
+}
+
+/* =====================================
+   GENERATED IMAGE
+===================================== */
+
 function addGeneratedImage(bubble, imageUrl) {
   if (!imageUrl) return;
 
   const image = document.createElement("img");
-
   image.src = imageUrl;
   image.alt = "Image generated by K-ULTRA AI";
   image.style.display = "block";
@@ -219,7 +292,6 @@ function addGeneratedImage(bubble, imageUrl) {
   image.style.height = "auto";
   image.style.marginTop = "12px";
   image.style.borderRadius = "12px";
-  image.style.objectFit = "contain";
 
   image.onerror = () => {
     image.alt = "Unable to display generated image.";
@@ -228,92 +300,146 @@ function addGeneratedImage(bubble, imageUrl) {
   bubble.appendChild(image);
 }
 
-// Add messages
-function addMessage(
-  message,
-  sender,
-  userIndex = -1,
-  imageUrl = null
-) {
+/* =====================================
+   COPY RESPONSE
+===================================== */
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Copied!");
+  } catch {
+    const temp = document.createElement("textarea");
+    temp.value = text;
+    document.body.appendChild(temp);
+    temp.select();
+    document.execCommand("copy");
+    temp.remove();
+    alert("Copied!");
+  }
+}
+
+/* =====================================
+   SHARE CHAT
+===================================== */
+
+async function shareChat() {
+  const conversation = getCurrentChat();
+  if (!conversation || !conversation.messages.length) {
+    alert("No messages to share.");
+    return;
+  }
+
+  const content = conversation.messages.map(item => {
+    return (item.sender === "user" ? "You: " : "K-ULTRA AI: ") +
+      item.message;
+  }).join("\n\n");
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: conversation.title,
+        text: content
+      });
+    } else {
+      await copyText(content);
+    }
+  } catch (error) {
+    if (error.name !== "AbortError") {
+      alert("Unable to share this chat.");
+    }
+  }
+}
+
+/* =====================================
+   MESSAGE ACTIONS
+===================================== */
+
+function addMessage(message, sender, userIndex = -1, imageUrl = null) {
   const bubble = document.createElement("div");
 
   bubble.className = sender + "-message";
   bubble.textContent = message;
-  bubble.style.padding = "14px";
-  bubble.style.margin = "12px 0";
-  bubble.style.borderRadius = "15px";
-  bubble.style.maxWidth = "85%";
   bubble.style.whiteSpace = "pre-wrap";
+  bubble.style.overflowWrap = "anywhere";
 
-  if (sender === "user") {
-    bubble.style.background = "#343078";
-    bubble.style.marginLeft = "auto";
-  } else {
-    bubble.style.background = "#183451";
-    bubble.style.marginRight = "auto";
-  }
-
-  if (imageUrl) {
-    addGeneratedImage(bubble, imageUrl);
-  }
+  if (imageUrl) addGeneratedImage(bubble, imageUrl);
 
   chat.appendChild(bubble);
 
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+
   if (sender === "bot") {
-    const actions = document.createElement("div");
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "📋 Copy";
+    copyBtn.title = "Copy response";
+    copyBtn.addEventListener("click", () => copyText(message));
+    actions.appendChild(copyBtn);
 
-    actions.className = "message-actions";
-    actions.style.display = "flex";
-    actions.style.flexDirection = "row";
-    actions.style.alignItems = "center";
-    actions.style.gap = "8px";
-    actions.style.marginTop = "8px";
-    actions.style.flexWrap = "wrap";
-
-    // Voice button
     const speaker = document.createElement("button");
-
     speaker.textContent = "🔊";
     speaker.title = "Listen again";
-    speaker.style.margin = "0";
-    speaker.style.padding = "6px 12px";
-    speaker.style.borderRadius = "10px";
-
-    speaker.addEventListener("click", () => {
-      speakReply(message, speaker);
-    });
-
+    speaker.addEventListener("click", () => speakReply(message, speaker));
     actions.appendChild(speaker);
 
-    // Regenerate button
     if (userIndex >= 0) {
       const regenerateBtn = document.createElement("button");
-
       regenerateBtn.textContent = "🔄 Regenerate";
-      regenerateBtn.title = "Generate another response";
-      regenerateBtn.style.margin = "0";
-      regenerateBtn.style.padding = "6px 12px";
-      regenerateBtn.style.borderRadius = "10px";
-
-      regenerateBtn.addEventListener("click", () => {
-        regenerateResponse(userIndex);
-      });
-
+      regenerateBtn.addEventListener("click", () => regenerateResponse(userIndex));
       actions.appendChild(regenerateBtn);
     }
+  }
 
+  if (sender === "user" && userIndex >= 0) {
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "✏️ Edit";
+    editBtn.addEventListener("click", () => editMessage(userIndex));
+    actions.appendChild(editBtn);
+
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "📋 Copy";
+    copyBtn.addEventListener("click", () => copyText(message));
+    actions.appendChild(copyBtn);
+  }
+
+  if (actions.children.length > 0) {
     chat.appendChild(actions);
   }
 
   return bubble;
 }
 
-// Display chat
+/* =====================================
+   EDIT MESSAGE
+===================================== */
+
+function editMessage(index) {
+  const conversation = getCurrentChat();
+  if (!conversation || button.disabled) return;
+
+  const oldMessage = conversation.messages[index];
+  if (!oldMessage || oldMessage.sender !== "user") return;
+
+  const edited = prompt("Edit your message:", oldMessage.message);
+  if (!edited || !edited.trim()) return;
+
+  conversation.messages = conversation.messages.slice(0, index);
+  saveConversations();
+  renderChat();
+
+  input.value = edited.trim();
+  sendMessage();
+}
+
+/* =====================================
+   RENDER CHAT
+===================================== */
+
 function renderChat() {
   chat.innerHTML = "";
 
   const conversation = getCurrentChat();
-
   if (!conversation) return;
 
   conversation.messages.forEach((item, index) => {
@@ -331,61 +457,55 @@ function renderChat() {
     addMessage(
       item.message,
       item.sender,
-      userIndex,
+      item.sender === "user" ? index : userIndex,
       item.image || null
     );
   });
+
+  chat.scrollTop = chat.scrollHeight;
 }
 
-// Save messages
-function saveMessage(message, sender, image = null) {
-  const conversation = getCurrentChat();
+/* =====================================
+   SEND MESSAGE
+===================================== */
 
-  if (!conversation) return;
-
-  conversation.messages.push({
-    message,
-    sender,
-    ...(image ? { image } : {})
-  });
-
-  if (
-    conversation.title === "New Chat" &&
-    sender === "user"
-  ) {
-    conversation.title = message.slice(0, 25);
-  }
-
-  saveConversations();
-  renderChatList();
-}
-
-// Send message
 async function sendMessage() {
-  const message = input.value.trim();
+  let message = input.value.trim();
+
+  if (selectedFileText) {
+    message =
+      message +
+      "\n\nAttached file: " + selectedFileName +
+      "\nFile content:\n" + selectedFileText;
+  }
 
   if (!message || button.disabled) return;
 
-  if (!getCurrentChat()) {
-    createConversation();
-  }
+  if (!getCurrentChat()) createConversation();
 
   const conversation = getCurrentChat();
 
-  const history = conversation.messages
-    .slice(-10)
-    .map(item => ({
-      role: item.sender === "user" ? "user" : "assistant",
-      content: item.message
-    }));
+  const history = conversation.messages.slice(-10).map(item => ({
+    role: item.sender === "user" ? "user" : "assistant",
+    content: item.message
+  }));
 
   saveMessage(message, "user");
 
   const userIndex = conversation.messages.length - 1;
-
-  addMessage(message, "user");
+  addMessage(message, "user", userIndex);
 
   input.value = "";
+  selectedFileText = "";
+  selectedFileName = "";
+
+  if (filePreview) {
+    filePreview.textContent = "";
+    filePreview.style.display = "none";
+  }
+
+  if (fileInput) fileInput.value = "";
+
   button.disabled = true;
 
   const loading = addMessage(
@@ -399,9 +519,7 @@ async function sendMessage() {
   try {
     abortController = new AbortController();
 
-    if (stopBtn) {
-      stopBtn.style.display = "inline-block";
-    }
+    if (stopBtn) stopBtn.style.display = "inline-block";
 
     const response = await fetch(API_URL, {
       method: "POST",
@@ -418,9 +536,7 @@ async function sendMessage() {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(
-        data.error || "Something went wrong"
-      );
+      throw new Error(data.error || "Something went wrong");
     }
 
     const reply = data.reply || "No reply received.";
@@ -429,14 +545,10 @@ async function sendMessage() {
     loading.classList.remove("typing-indicator");
     loading.textContent = reply;
 
-    if (imageUrl) {
-      addGeneratedImage(loading, imageUrl);
-    }
+    if (imageUrl) addGeneratedImage(loading, imageUrl);
 
     saveMessage(reply, "bot", imageUrl);
-
-    
-
+    renderChat();
 
   } catch (error) {
     loading.classList.remove("typing-indicator");
@@ -450,16 +562,17 @@ async function sendMessage() {
   } finally {
     button.disabled = false;
 
-    if (stopBtn) {
-      stopBtn.style.display = "none";
-    }
+    if (stopBtn) stopBtn.style.display = "none";
 
     abortController = null;
     input.focus();
   }
 }
 
-// Regenerate response
+/* =====================================
+   REGENERATE RESPONSE
+===================================== */
+
 function regenerateResponse(userIndex) {
   const conversation = getCurrentChat();
 
@@ -467,15 +580,11 @@ function regenerateResponse(userIndex) {
 
   const message = conversation.messages[userIndex]?.message;
 
-  if (
-    !message ||
-    conversation.messages[userIndex].sender !== "user"
-  ) {
+  if (!message || conversation.messages[userIndex].sender !== "user") {
     return;
   }
 
   conversation.messages = conversation.messages.slice(0, userIndex);
-
   saveConversations();
   renderChat();
 
@@ -483,52 +592,94 @@ function regenerateResponse(userIndex) {
   sendMessage();
 }
 
-// Button events
-button.addEventListener("click", sendMessage);
+/* =====================================
+   BUTTON EVENTS
+===================================== */
+
+if (button) {
+  button.addEventListener("click", sendMessage);
+}
 
 if (stopBtn) {
   stopBtn.addEventListener("click", () => {
-    if (abortController) {
-      abortController.abort();
-    }
+    if (abortController) abortController.abort();
   });
 }
 
-input.addEventListener("keydown", function(event) {
-  if (event.key === "Enter") {
-    sendMessage();
-  }
-});
+if (input) {
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") sendMessage();
+  });
+}
 
-newChatBtn.addEventListener("click", createConversation);
+if (newChatBtn) {
+  newChatBtn.addEventListener("click", createConversation);
+}
 
-// Suggestions
 function sendSuggestion(message) {
   input.value = message;
   sendMessage();
 }
 
 window.sendSuggestion = sendSuggestion;
-
-// Open previous chat
-if (
-  !conversations.some(item => item.id === currentChatId)
-) {
-  if (conversations.length > 0) {
-    currentChatId = conversations[0].id;
-  } else {
-    createConversation();
-  }
-}
-
-saveConversations();
-renderChat();
-renderChatList();
-
 window.createNewChat = createConversation;
 
-// Voice input
-const micBtn = document.getElementById("micBtn");
+/* =====================================
+   SIDEBAR
+===================================== */
+
+if (sidebarToggle && workspace) {
+  sidebarToggle.addEventListener("click", () => {
+    workspace.classList.toggle("sidebar-closed");
+  });
+}
+
+/* =====================================
+   FILE UPLOAD
+===================================== */
+
+if (attachBtn && fileInput) {
+  attachBtn.addEventListener("click", () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const extension = file.name.split(".").pop().toLowerCase();
+
+    if (!["txt", "md"].includes(extension)) {
+      alert("Currently, text reading supports .txt and .md files only. PDF, Word and image reading need additional support.");
+      fileInput.value = "";
+      return;
+    }
+
+    if (file.size > 1024 * 1024) {
+      alert("Please select a file smaller than 1 MB.");
+      fileInput.value = "";
+      return;
+    }
+
+    try {
+      selectedFileText = await file.text();
+      selectedFileName = file.name;
+
+      if (filePreview) {
+        filePreview.textContent = "📎 Attached: " + file.name;
+        filePreview.style.display = "block";
+      }
+    } catch (error) {
+      alert("Unable to read this file.");
+      selectedFileText = "";
+      selectedFileName = "";
+    }
+  });
+}
+
+/* =====================================
+   VOICE INPUT
+===================================== */
 
 const SpeechRecognition =
   window.SpeechRecognition ||
@@ -537,12 +688,11 @@ const SpeechRecognition =
 if (micBtn) {
   micBtn.addEventListener("click", () => {
     if (!SpeechRecognition) {
-      alert("Voice input is not supported in this browser. Please use Chrome.");
+      alert("Voice input is not supported. Please use Chrome.");
       return;
     }
 
     const recognition = new SpeechRecognition();
-
     recognition.lang = "te-IN";
     recognition.continuous = false;
     recognition.interimResults = false;
@@ -567,8 +717,16 @@ if (micBtn) {
   });
 }
 
-// Voice output
+/* =====================================
+   VOICE OUTPUT
+===================================== */
+
 function speakReply(message, speaker) {
+  if (!window.speechSynthesis) {
+    alert("Voice output is not supported in this browser.");
+    return;
+  }
+
   if (window.speechSynthesis.speaking) {
     window.speechSynthesis.cancel();
     speaker.textContent = "🔊";
@@ -593,13 +751,19 @@ function speakReply(message, speaker) {
   window.speechSynthesis.speak(speech);
 }
 
-// Sidebar
-const sidebarToggle = document.getElementById("sidebarToggle");
-const workspace = document.querySelector(".workspace");
+/* =====================================
+   START APPLICATION
+===================================== */
 
-if (sidebarToggle && workspace) {
-  sidebarToggle.addEventListener("click", function() {
-    workspace.classList.toggle("sidebar-closed");
-  });
-      }
-    
+if (!conversations.some(item => item.id === currentChatId)) {
+  if (conversations.length > 0) {
+    currentChatId = conversations[0].id;
+  } else {
+    createConversation();
+  }
+}
+
+saveConversations();
+renderChat();
+renderChatList();
+                             
