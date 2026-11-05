@@ -541,7 +541,7 @@ if (fileInput) {
       selectedFileName = file.name;
 
       if (filePreview) {
-        filePreview.textContent = "+ Attached: " + file.name;
+        filePreview.textContent = " 📎 Attached: " + file.name;
         filePreview.style.display = "block";
       }
 
