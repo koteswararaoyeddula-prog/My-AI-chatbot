@@ -717,3 +717,38 @@ function exportCurrentChat() {
 
   URL.revokeObjectURL(url);
   }
+/* =====================================
+   K-ULTRA AI THEME SWITCH
+===================================== */
+
+const themeToggle = document.getElementById("themeToggle");
+
+// Load saved theme
+const savedTheme = localStorage.getItem("kUltraTheme");
+
+if (savedTheme === "light") {
+  document.body.classList.add("light-mode");
+  themeToggle.textContent = "🌙";
+} else {
+  document.body.classList.remove("light-mode");
+  themeToggle.textContent = "☀️";
+}
+
+// Toggle theme
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => {
+
+    document.body.classList.toggle("light-mode");
+
+    const isLight =
+      document.body.classList.contains("light-mode");
+
+    localStorage.setItem(
+      "kUltraTheme",
+      isLight ? "light" : "dark"
+    );
+
+    themeToggle.textContent =
+      isLight ? "🌙" : "☀️";
+  });
+}
