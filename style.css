@@ -430,3 +430,28 @@ button {
   animation: none !important;
   opacity: 1 !important;
 }
+/* EXPORT CHAT BUTTON */
+
+.export-button {
+  margin-left: auto;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #7138ff, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.export-button:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 600px) {
+  .export-button {
+    padding: 8px;
+    font-size: 11px;
+  }
+}
