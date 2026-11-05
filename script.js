@@ -1,9 +1,9 @@
-
+Writing
 "use strict";
 
 /* =========================================
-   K-ULTRA AI - VERSION 13
-   COMPLETE FIXED CHAT SYSTEM
+   K-ULTRA AI - VERSION 14
+   COMPLETE CHAT SYSTEM + THEME FIX
 ========================================= */
 
 const API_URL =
@@ -16,7 +16,6 @@ const THEME_KEY = "kUltraTheme";
 const $ = id => document.getElementById(id);
 
 const app = document.querySelector(".app");
-
 const chat = $("chat");
 const input = $("userInput");
 const sendBtn = $("sendBtn");
@@ -45,7 +44,7 @@ let recognition = null;
 function storageGet(key, fallback = "") {
   try {
     return localStorage.getItem(key) ?? fallback;
-  } catch (error) {
+  } catch {
     return fallback;
   }
 }
@@ -59,6 +58,72 @@ function storageSet(key, value) {
     return false;
   }
 }
+
+/* =========================================
+   THEME SYSTEM - FIXED
+========================================= */
+
+function applyTheme(theme) {
+  const isLight = theme === "light";
+
+  document.body.classList.toggle("light-mode", isLight);
+
+  const themeButton = $("themeToggle");
+
+  if (themeButton) {
+    themeButton.textContent = isLight ? "🌙" : "☀️";
+
+    themeButton.setAttribute(
+      "aria-label",
+      isLight ? "Switch to dark mode" : "Switch to light mode"
+    );
+
+    themeButton.title = isLight
+      ? "Switch to dark mode"
+      : "Switch to light mode";
+
+    themeButton.setAttribute(
+      "aria-pressed",
+      String(isLight)
+    );
+  }
+
+  const themeMeta = document.querySelector(
+    'meta[name="theme-color"]'
+  );
+
+  if (themeMeta) {
+    themeMeta.content = isLight ? "#f4f6fc" : "#080d25";
+  }
+
+  storageSet(THEME_KEY, isLight ? "light" : "dark");
+}
+
+function initializeTheme() {
+  const savedTheme = storageGet(THEME_KEY, "dark");
+
+  applyTheme(
+    savedTheme === "light" ? "light" : "dark"
+  );
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains("light-mode");
+
+  applyTheme(isLight ? "dark" : "light");
+}
+
+initializeTheme();
+
+const themeButton = $("themeToggle");
+
+if (themeButton) {
+  themeButton.addEventListener("click", toggleTheme);
+}
+
+/* =========================================
+   LOAD CONVERSATIONS
+========================================= */
 
 function loadConversations() {
   try {
@@ -83,22 +148,12 @@ function loadConversations() {
 }
 
 conversations = loadConversations();
+
 currentChatId = storageGet(CURRENT_KEY, "");
 
 function saveData() {
-  const chatsSaved = storageSet(
-    CHAT_KEY,
-    JSON.stringify(conversations)
-  );
-
-  const currentSaved = storageSet(
-    CURRENT_KEY,
-    currentChatId
-  );
-
-  if (!chatsSaved || !currentSaved) {
-    console.warn("Unable to save all chat data.");
-  }
+  storageSet(CHAT_KEY, JSON.stringify(conversations));
+  storageSet(CURRENT_KEY, currentChatId);
 }
 
 function currentChat() {
@@ -108,7 +163,7 @@ function currentChat() {
 }
 
 /* =========================================
-   EVENT LISTENER HELPER
+   EVENT HELPER
 ========================================= */
 
 function on(id, event, callback) {
@@ -116,8 +171,6 @@ function on(id, event, callback) {
 
   if (element) {
     element.addEventListener(event, callback);
-  } else {
-    console.warn("Element not found:", id);
   }
 
   return element;
@@ -193,6 +246,7 @@ function renderChatList() {
 
   const heading = document.createElement("h3");
   heading.textContent = "Previous Chats";
+
   list.appendChild(heading);
 
   const query = searchInput
@@ -223,14 +277,14 @@ function renderChatList() {
     row.className = "chat-row";
 
     const open = document.createElement("button");
+
     open.type = "button";
     open.className = "open-chat";
+    open.textContent = item.title || "New Chat";
 
     if (item.id === currentChatId) {
       open.classList.add("active");
     }
-
-    open.textContent = item.title || "New Chat";
 
     open.addEventListener("click", () => {
       if (controller) controller.abort();
@@ -249,6 +303,7 @@ function renderChatList() {
     });
 
     const menu = document.createElement("button");
+
     menu.type = "button";
     menu.textContent = "⋮";
     menu.title = "Chat options";
@@ -266,6 +321,7 @@ function renderChatList() {
 
         if (name && name.trim()) {
           item.title = name.trim().slice(0, 60);
+
           saveData();
           renderChatList();
         }
@@ -311,7 +367,7 @@ on("sidebarToggle", "click", () => {
 });
 
 /* =========================================
-   SUGGESTION BUTTONS
+   SUGGESTIONS
 ========================================= */
 
 document.querySelectorAll("[data-prompt]").forEach(button => {
@@ -460,9 +516,12 @@ function addMessage(role, content, image, index) {
   if (!chat) return;
 
   const wrapper = document.createElement("div");
-  wrapper.className = "message " + role + "-message";
+
+  wrapper.className =
+    "message " + role + "-message";
 
   const bubble = document.createElement("div");
+
   bubble.className = "message-bubble";
   bubble.textContent = content || "";
 
@@ -560,6 +619,7 @@ on("attachBtn", "click", event => {
   if (!attachMenu) return;
 
   event.stopPropagation();
+
   attachMenu.hidden = !attachMenu.hidden;
 });
 
@@ -617,9 +677,12 @@ function selectImage(file) {
     filePreview.replaceChildren();
 
     const label = document.createElement("p");
-    label.textContent = "🖼️ Image attached: " + file.name;
+
+    label.textContent =
+      "🖼️ Image attached: " + file.name;
 
     const img = document.createElement("img");
+
     img.src = selectedImage;
     img.alt = "Image preview";
 
@@ -792,19 +855,24 @@ async function sendMessage(
   const history = conversation.messages
     .slice(-12)
     .map(item => ({
-      role: item.role === "user" ? "user" : "assistant",
+      role: item.role === "user"
+        ? "user"
+        : "assistant",
       content: item.content
     }));
 
   const requestController = new AbortController();
+
   controller = requestController;
 
   sendBtn.disabled = true;
   stopBtn.hidden = false;
 
   const typing = document.createElement("div");
+
   typing.className =
     "message assistant-message typing-indicator";
+
   typing.textContent = "K-ULTRA AI is thinking...";
 
   if (chat) chat.appendChild(typing);
@@ -812,13 +880,16 @@ async function sendMessage(
   try {
     const response = await fetch(API_URL, {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json"
       },
+
       body: JSON.stringify({
         message,
         history
       }),
+
       signal: requestController.signal
     });
 
@@ -857,6 +928,7 @@ async function sendMessage(
         role: "assistant",
         content: "Generation stopped."
       });
+
     } else {
       console.error("Chat error:", error);
 
@@ -900,155 +972,4 @@ if (input) {
   });
 }
 
-/* =========================================
-   STOP GENERATION
-========================================= */
-
-on("stopBtn", "click", () => {
-  if (controller) {
-    controller.abort();
-  }
-});
-
-/* =========================================
-   IMAGE PROMPT
-========================================= */
-
-on("imageBtn", "click", () => {
-  if (!input) return;
-
-  const prompt = input.value.trim();
-
-  if (!prompt) {
-    alert("First type an image description.");
-    return;
-  }
-
-  sendMessage(
-    "Please help me create an image: " + prompt
-  );
-});
-
-/* =========================================
-   VOICE INPUT
-========================================= */
-
-const SpeechRecognition =
-  window.SpeechRecognition ||
-  window.webkitSpeechRecognition;
-
-const micBtn = $("micBtn");
-
-if (SpeechRecognition && micBtn) {
-  recognition = new SpeechRecognition();
-
-  recognition.lang = "te-IN";
-  recognition.continuous = false;
-  recognition.interimResults = false;
-
-  micBtn.addEventListener("click", () => {
-    try {
-      recognition.start();
-    } catch (error) {
-      console.log("Voice recognition:", error);
-    }
-  });
-
-  recognition.onstart = () => {
-    micBtn.textContent = "🔴";
-  };
-
-  recognition.onresult = event => {
-    if (!input) return;
-
-    input.value = event.results[0][0].transcript;
-    input.focus();
-  };
-
-  recognition.onend = () => {
-    micBtn.textContent = "🎤";
-  };
-
-  recognition.onerror = () => {
-    micBtn.textContent = "🎤";
-  };
-
-} else if (micBtn) {
-  micBtn.addEventListener("click", () => {
-    alert("Voice input is not supported in this browser.");
-  });
-}
-
 /*
-
-/* =========================================
-   EXPORT CHAT
-========================================= */
-
-function exportCurrentChat() {
-  const conversation = currentChat();
-
-  if (!conversation || !conversation.messages.length) {
-    alert("No chat available to export.");
-    return;
-  }
-
-  const content = conversation.messages
-    .map(item => {
-      const role =
-        item.role === "user" ? "You" : "K-ULTRA AI";
-
-      return role + ":\n" + (item.content || "");
-    })
-    .join("\n\n--------------------\n\n");
-
-  const blob = new Blob(
-    [content],
-    { type: "text/plain;charset=utf-8" }
-  );
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-
-  link.href = url;
-  link.download =
-    (conversation.title || "K-ULTRA-chat")
-      .replace(/[^\w-]/g, "_") + ".txt";
-
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  URL.revokeObjectURL(url);
-}
-
-window.exportCurrentChat = exportCurrentChat;
-function initializeApp() {
-  console.log("K-ULTRA AI Version 13 starting...");
-
-  if (!currentChat()) {
-    if (conversations.length) {
-      currentChatId = conversations[0].id;
-    } else {
-      const firstChat = {
-        id: Date.now().toString(),
-        title: "New Chat",
-        messages: []
-      };
-
-      conversations.unshift(firstChat);
-      currentChatId = firstChat.id;
-    }
-  }
-
-  initializeTheme();
-
-  saveData();
-  renderChat();
-  renderChatList();
-
-  if (stopBtn) stopBtn.hidden = true;
-
-  console.log("K-ULTRA AI Version 13 ready!");
-}
-initializeApp();
