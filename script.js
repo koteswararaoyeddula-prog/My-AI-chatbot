@@ -1,7 +1,7 @@
 
 /* =========================================
    K-ULTRA AI - COMPLETE CHAT SYSTEM
-   VERSION 10
+   VERSION 10 
 ========================================= */
 
 "use strict";
