@@ -276,12 +276,16 @@ if (chatSearch) {
   chatSearch.addEventListener("input", renderChatList);
 }
 
+
 /* =====================================
-   GENERATED IMAGE
+   GENERATED IMAGE + DOWNLOAD
 ===================================== */
 
 function addGeneratedImage(bubble, imageUrl) {
   if (!imageUrl) return;
+
+  const imageBox = document.createElement("div");
+  imageBox.style.marginTop = "12px";
 
   const image = document.createElement("img");
   image.src = imageUrl;
@@ -290,14 +294,55 @@ function addGeneratedImage(bubble, imageUrl) {
   image.style.width = "100%";
   image.style.maxWidth = "420px";
   image.style.height = "auto";
-  image.style.marginTop = "12px";
   image.style.borderRadius = "12px";
 
   image.onerror = () => {
     image.alt = "Unable to display generated image.";
   };
 
-  bubble.appendChild(image);
+  const downloadBtn = document.createElement("button");
+  downloadBtn.textContent = "⬇️ Download Image";
+  downloadBtn.type = "button";
+  downloadBtn.style.marginTop = "10px";
+  downloadBtn.style.padding = "10px 16px";
+  downloadBtn.style.border = "none";
+  downloadBtn.style.borderRadius = "10px";
+  downloadBtn.style.background = "#2563eb";
+  downloadBtn.style.color = "#ffffff";
+  downloadBtn.style.cursor = "pointer";
+
+  downloadBtn.addEventListener("click", async () => {
+    try {
+      downloadBtn.disabled = true;
+      downloadBtn.textContent = "Downloading...";
+
+      const response = await fetch(imageUrl);
+      if (!response.ok) throw new Error("Image download failed");
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = "K-ULTRA-AI-image.png";
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+
+      downloadBtn.textContent = "✅ Downloaded";
+    } catch (error) {
+      window.open(imageUrl, "_blank");
+      downloadBtn.textContent = "⬇️ Open Image";
+    } finally {
+      downloadBtn.disabled = false;
+    }
+  });
+
+  imageBox.append(image, downloadBtn);
+  bubble.appendChild(imageBox);
 }
 
 /* =====================================
