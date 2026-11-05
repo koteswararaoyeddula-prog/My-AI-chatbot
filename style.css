@@ -389,3 +389,44 @@ body.light-mode .composer textarea {
     font-size: 13px;
   }
 }
+
+/* K-ULTRA AI - DARK/LIGHT MODE FIX */
+
+body.light-mode,
+body.light-mode .app,
+body.light-mode .workspace,
+body.light-mode .main,
+body.light-mode .sidebar,
+body.light-mode #chat,
+body.light-mode .composer,
+body.light-mode .header {
+  background: #f4f5fa !important;
+  color: #202333 !important;
+}
+
+body.light-mode .sidebar,
+body.light-mode .header,
+body.light-mode .composer {
+  border-color: #ddddE8 !important;
+}
+
+body.light-mode .bot-message {
+  background: #e9ebf4 !important;
+  color: #202333 !important;
+}
+
+body.light-mode .welcome h2 {
+  color: #202333 !important;
+}
+
+body.light-mode .composer textarea {
+  background: #ffffff !important;
+  color: #202333 !important;
+  border-color: #d5d8e5 !important;
+}
+
+body.light-mode .sidebar button,
+body.light-mode .suggestions button {
+  background: #e9ebf4 !important;
+  color: #202333 !important;
+}
