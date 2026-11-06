@@ -1451,3 +1451,300 @@ async function sendMessage(
     input?.focus();
   }
 }
+/* FORM SUBMIT */
+
+form?.addEventListener("submit", event => {
+  event.preventDefault();
+
+  const message = input?.value.trim();
+
+  if (!message || isGenerating) return;
+
+  let finalMessage = message;
+
+  if (selectedFileText) {
+    finalMessage +=
+      "\n\nAttached file content:\n" +
+      selectedFileText;
+  }
+
+  input.value = "";
+
+  input.style.height = "auto";
+
+  sendMessage(finalMessage);
+
+  clearSelectedFile();
+});
+
+/* ENTER KEY */
+
+input?.addEventListener("keydown", event => {
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey
+  ) {
+    event.preventDefault();
+
+    if (form?.requestSubmit) {
+      form.requestSubmit();
+    }
+  }
+});
+
+/* AUTO RESIZE */
+
+input?.addEventListener("input", () => {
+  input.style.height = "auto";
+
+  input.style.height =
+    Math.min(input.scrollHeight, 180) + "px";
+});
+
+/* =========================================
+   PART 6 - FILE ATTACHMENT
+========================================= */
+
+function clearSelectedFile() {
+  selectedFileText = "";
+     if (selectedImageURL) {
+    URL.revokeObjectURL(selectedImageURL);
+    selectedImageURL = "";
+  }
+
+  if (filePreview) {
+    filePreview.replaceChildren();
+    filePreview.hidden = true;
+  }
+
+  if (fileInput) {
+    fileInput.value = "";
+  }
+}
+
+/* ATTACH BUTTON */
+
+attachBtn?.addEventListener("click", () => {
+  fileInput?.click();
+});
+
+/* FILE SELECT */
+
+fileInput?.addEventListener("change", async () => {
+  const file = fileInput.files?.[0];
+
+  if (!file) return;
+
+  clearSelectedFile();
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Please select a file smaller than 5 MB.");
+    return;
+  }
+
+  if (
+    file.type.startsWith("image/") &&
+    ["image/png", "image/jpeg"].includes(file.type)
+  ) {
+    selectedImageURL = URL.createObjectURL(file);
+
+    if (filePreview) {
+      const image = document.createElement("img");
+
+      image.src = selectedImageURL;
+      image.alt = "Selected image";
+
+      image.style.cssText =
+        "max-width:130px;max-height:100px;" +
+        "border-radius:10px;";
+
+      filePreview.appendChild(image);
+      filePreview.hidden = false;
+    }
+
+    selectedFileText =
+      "[An image named " + file.name +
+      " is attached. Image analysis requires backend vision support.]";
+
+    return;
+  }
+
+  if (
+    file.type.startsWith("text/") ||
+    /\.(txt|md)$/i.test(file.name)
+  ) {
+    try {
+      selectedFileText = await file.text();
+
+      if (filePreview) {
+        filePreview.textContent =
+          "📎 " + file.name;
+
+        filePreview.hidden = false;
+  }
+    } catch (error) {
+      console.error(error);
+      alert("Unable to read this file.");
+      clearSelectedFile();
+    }
+
+    return;
+  }
+
+  alert(
+    "Supported files: TXT, MD, PNG and JPG."
+  );
+
+  clearSelectedFile();
+});
+
+/* =========================================
+   PART 7 - VOICE INPUT
+========================================= */
+
+function startVoiceInput() {
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert(
+      "Voice input is not supported in this browser."
+    );
+    return;
+  }
+
+  if (recognition) {
+    recognition.stop();
+    recognition = null;
+  }
+
+  recognition = new SpeechRecognition();
+
+  recognition.lang = "te-IN";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    if (micBtn) {
+      micBtn.textContent = "🔴";
+    }
+  };
+
+  recognition.onresult = event => {
+    const transcript =
+      event.results[0][0].transcript;
+
+    if (input) {
+      input.value = (
+        input.value
+          ? input.value + " "
+          : ""
+      ) + transcript;
+
+      input.focus();
+      input.dispatchEvent(
+        new Event("input")
+      );
+    }
+  };
+
+  recognition.onerror = event => {
+    console.error("Voice error:", event.error);
+  };
+
+  recognition.onend = () => {
+    if (micBtn) {
+      micBtn.textContent = "🎤";
+    }
+
+    recognition = null;
+  };
+
+  try {
+    recognition.start();
+  } catch (error) {
+    console.error(error);
+  }
+}
+micBtn?.addEventListener(
+  "click",
+  startVoiceInput
+);
+
+/* =========================================
+   PART 8 - SUGGESTIONS
+========================================= */
+
+suggestions?.addEventListener("click", event => {
+  const button = event.target.closest(
+    "[data-prompt]"
+  );
+
+  if (!button) return;
+
+  const promptText = button.dataset.prompt;
+
+  if (!promptText) return;
+
+  sendMessage(promptText);
+});
+
+/* =========================================
+   PART 9 - CLEANUP
+========================================= */
+
+window.addEventListener("beforeunload", () => {
+  stopSpeaker();
+
+  if (recognition) {
+    recognition.stop();
+  }
+
+  if (controller) {
+    controller.abort();
+  }
+
+  if (selectedImageURL) {
+    URL.revokeObjectURL(selectedImageURL);
+  }
+});
+
+/* =========================================
+   PART 10 - INITIALIZATION
+========================================= */
+
+function initializeApp() {
+  loadData();
+
+  if (!currentChat()) {
+    createChat();
+  }
+
+  applyTheme(
+    storageGet(THEME_KEY, "dark")
+  );
+
+  renderChat();
+  renderChatList();
+
+  console.log(
+    "K-ULTRA AI VERSION 24 READY"
+  );
+}
+
+/* START */
+
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    initializeApp,
+    { once: true }
+  );
+} else {
+   initializeApp();
+}
+
+/* =========================================
+   END OF K-ULTRA AI VERSION 24
+========================================= */
