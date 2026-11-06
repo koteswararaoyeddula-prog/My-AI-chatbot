@@ -680,10 +680,13 @@ function setLoading(loading) {
    AI REQUEST
 ===================================== */
 
+
 async function requestAI(message, chatId) {
   if (controller) return;
 
-  controller = new AbortController();
+  const requestController = new AbortController();
+  controller = requestController;
+
   setLoading(true);
 
   const typing = addMessageElement(
@@ -701,56 +704,49 @@ async function requestAI(message, chatId) {
       body: JSON.stringify({
         message: message
       }),
-      signal: controller.signal
+      signal: requestController.signal
     });
-
-    if (!response.ok) {
-      throw new Error(
-        "Server error: " + response.status
-      );
-    }
 
     const data = await response.json();
 
-    
-const answer =
-  data.response ??
-  data.reply ??
-  data.result?.response ??
-  data.result ??
-  data.text ??
-  data.output ??
-  data.message;
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Server error: " + response.status
+      );
+    }
 
-if (typeof answer !== "string") {
-  throw new Error("Unexpected response from AI backend.");
-}
+    const answer =
+      data.response ??
+      data.reply ??
+      data.result?.response ??
+      data.result ??
+      data.text ??
+      data.output ??
+      data.message;
 
-let finalAnswer = answer.trim() || "No reply received.";
+    if (typeof answer !== "string") {
+      throw new Error("Unexpected response from AI backend.");
+    }
 
-if (typeof data.image === "string" && data.image) {
-  finalAnswer += "\n\n![Generated image](" + data.image + ")";
-}
+    let finalAnswer = answer.trim() || "No reply received.";
 
-const target = conversations.find(
-  item => item.id === chatId
-);
+    if (typeof data.image === "string" && data.image) {
+      finalAnswer +=
+        "\n\n![Generated image](" + data.image + ")";
+    }
 
-if (target) {
-  target.messages.push({
-    role: "assistant",
-    content: finalAnswer
-  });
+    const target = conversations.find(
+      item => item.id === chatId
+    );
 
-  saveData();
-}
+    if (target) {
+      target.messages.push({
+        role: "assistant",
+        content: finalAnswer
+      });
 
-if (currentChatId === chatId) {
-  renderChat();
-  renderChatList();
-}
-  }  
-    
+      saveData();
+    }
 
     if (currentChatId === chatId) {
       renderChat();
@@ -765,18 +761,19 @@ if (currentChatId === chatId) {
 
     console.error("AI error:", error);
 
-    typing.querySelector(
-      ".message-bubble"
-    ).textContent =
+    typing.querySelector(".message-bubble").textContent =
       "Sorry! " + error.message +
       "\nPlease check your internet connection or backend.";
 
   } finally {
-    controller = null;
-    setLoading(false);
-    input?.focus();
+    if (controller === requestController) {
+      controller = null;
+      setLoading(false);
+      input?.focus();
+    }
   }
 }
+
 
 /* =====================================
    SEND MESSAGE
