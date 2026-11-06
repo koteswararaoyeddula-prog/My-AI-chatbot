@@ -712,35 +712,44 @@ async function requestAI(message, chatId) {
 
     const data = await response.json();
 
-    const answer =
-      data.response ??
-      data.reply ??
-      data.result?.response ??
-      data.result ??
-      data.text ??
-      data.output ??
-      data.message;
+    
+const answer =
+  data.response ??
+  data.reply ??
+  data.result?.response ??
+  data.result ??
+  data.text ??
+  data.output ??
+  data.message;
 
-    if (typeof answer !== "string") {
-      throw new Error(
-        "Unexpected response from AI backend."
-      );
-    }
+if (typeof answer !== "string") {
+  throw new Error("Unexpected response from AI backend.");
+}
 
-    const finalAnswer =
-      answer.trim() || "No reply received.";
+let finalAnswer = answer.trim() || "No reply received.";
 
-    const target = conversations.find(
-      item => item.id === chatId
-    );
+if (typeof data.image === "string" && data.image) {
+  finalAnswer += "\n\n![Generated image](" + data.image + ")";
+}
 
-    if (target) {
-      target.messages.push({
-        role: "assistant",
-        content: finalAnswer
-      });
+const target = conversations.find(
+  item => item.id === chatId
+);
 
-      saveData();
+if (target) {
+  target.messages.push({
+    role: "assistant",
+    content: finalAnswer
+  });
+
+  saveData();
+}
+
+if (currentChatId === chatId) {
+  renderChat();
+  renderChatList();
+}
+     
     }
 
     if (currentChatId === chatId) {
