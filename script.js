@@ -2,15 +2,15 @@
 "use strict";
 
 /* =====================================================
-   K-ULTRA AI - VERSION 25
+   K-ULTRA AI - VERSION 26
    COMPLETE FRONTEND JAVASCRIPT
-   Compatible with current index.html and style.css
+   TEXT + IMAGE + VOICE + CHAT HISTORY
 ===================================================== */
 
 const API_URL =
   "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
 
-/* ---------------- ELEMENTS ---------------- */
+/* ELEMENTS */
 
 const $ = id => document.getElementById(id);
 
@@ -32,7 +32,7 @@ const micBtn = $("micBtn");
 const welcome = $("welcome");
 const suggestions = $("suggestions");
 
-/* ---------------- STORAGE ---------------- */
+/* STORAGE */
 
 const CHAT_KEY = "kUltraConversations";
 const CURRENT_KEY = "kUltraCurrentChatId";
@@ -46,11 +46,8 @@ let selectedFileText = "";
 let selectedFileName = "";
 let recognition = null;
 let isListening = false;
-let chatMenuElement = null;
-let imageViewer = null;
-let suppressChatClick = false;
 
-/* ---------------- HELPERS ---------------- */
+/* HELPERS */
 
 function createId() {
   return Date.now().toString(36) +
@@ -60,8 +57,7 @@ function createId() {
 function storageGet(key, fallback = null) {
   try {
     return localStorage.getItem(key) ?? fallback;
-  } catch (error) {
-    console.error("Storage read error:", error);
+  } catch {
     return fallback;
   }
 }
@@ -71,9 +67,13 @@ function storageSet(key, value) {
     localStorage.setItem(key, value);
     return true;
   } catch (error) {
-    console.error("Storage write error:", error);
+    console.error(error);
     return false;
   }
+}
+
+function currentChat() {
+  return conversations.find(c => c.id === currentChatId);
 }
 
 function saveData() {
@@ -83,35 +83,40 @@ function saveData() {
 
 function normalizeMessage(message) {
   return {
-    id: String(message?.id || createId()),
-    role: message?.role === "user" ? "user" : "assistant",
-    content: String(message?.content ?? ""),
-    createdAt: Number(message?.createdAt || Date.now())
+    id: String(message.id || createId()),
+    role: message.role === "user" ? "user" : "assistant",
+    content: String(message.content || ""),
+    createdAt: Number(message.createdAt || Date.now())
   };
 }
 
 function normalizeConversation(item) {
   return {
-    id: String(item?.id || createId()),
-    title: String(item?.title || "New Chat"),
-    messages: Array.isArray(item?.messages)
+    id: String(item.id || createId()),
+    title: String(item.title || "New Chat"),
+    messages: Array.isArray(item.messages)
       ? item.messages.map(normalizeMessage)
       : [],
-    pinned: Boolean(item?.pinned),
-    archived: Boolean(item?.archived),
-    project: String(item?.project || ""),
-    lockHash: String(item?.lockHash || ""),
-    updatedAt: Number(item?.updatedAt || Date.now())
+    pinned: Boolean(item.pinned),
+    archived: Boolean(item.archived),
+    project: String(item.project || ""),
+    lockHash: String(item.lockHash || ""),
+    updatedAt: Number(item.updatedAt || Date.now())
   };
 }
 
-function currentChat() {
-  return conversations.find(
-    item => item.id === currentChatId
-  );
+/* DATE AND TIME */
+
+function getTime(date = Date.now()) {
+  return new Date(date).toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata"
+  });
 }
 
-/* ---------------- CHAT CREATION ---------------- */
+/* CHAT CREATION */
 
 function createChat() {
   const item = {
@@ -137,18 +142,15 @@ function createChat() {
   return item;
 }
 
-/* ---------------- LOAD HISTORY ---------------- */
+/* LOAD HISTORY */
 
 function loadData() {
   try {
-    const data = JSON.parse(
-      storageGet(CHAT_KEY, "[]")
-    );
+    const data = JSON.parse(storageGet(CHAT_KEY, "[]"));
 
     conversations = Array.isArray(data)
       ? data.map(normalizeConversation)
       : [];
-
   } catch (error) {
     console.error("History error:", error);
     conversations = [];
@@ -157,18 +159,16 @@ function loadData() {
   currentChatId = storageGet(CURRENT_KEY, "");
 
   if (!conversations.some(
-    item => item.id === currentChatId && !item.archived
+    c => c.id === currentChatId && !c.archived
   )) {
     currentChatId =
-      conversations.find(item => !item.archived)?.id || "";
+      conversations.find(c => !c.archived)?.id || "";
   }
 
-  if (!currentChatId) {
-    createChat();
-  }
+  if (!currentChatId) createChat();
 }
 
-/* ---------------- THEME ---------------- */
+/* THEME */
 
 function applyTheme(theme) {
   const light = theme === "light";
@@ -177,10 +177,6 @@ function applyTheme(theme) {
 
   if (themeBtn) {
     themeBtn.textContent = light ? "🌙" : "☀️";
-    themeBtn.setAttribute(
-      "aria-label",
-      light ? "Switch to dark mode" : "Switch to light mode"
-    );
   }
 
   const meta = document.querySelector(
@@ -204,13 +200,13 @@ function toggleTheme() {
 
 themeBtn?.addEventListener("click", toggleTheme);
 
-/* ---------------- LOADING ---------------- */
+/* LOADING */
 
-function setLoading(loading) {
-  isGenerating = loading;
+function setLoading(value) {
+  isGenerating = value;
 
-  if (sendBtn) sendBtn.disabled = loading;
-  if (stopBtn) stopBtn.hidden = !loading;
+  if (sendBtn) sendBtn.disabled = value;
+  if (stopBtn) stopBtn.hidden = !value;
 }
 
 function stopGeneration() {
@@ -219,977 +215,25 @@ function stopGeneration() {
     controller = null;
   }
 
+  hideLoading();
   setLoading(false);
 }
 
 stopBtn?.addEventListener("click", stopGeneration);
 
-/* ---------------- SIDEBAR ---------------- */
+/* SIDEBAR */
 
 sidebarBtn?.addEventListener("click", () => {
   app?.classList.toggle("sidebar-collapsed");
 });
 
-/* ---------------- NEW CHAT ---------------- */
-
-newChatBtn?.addEventListener("click", () => {
-  stopGeneration();
-  stopSpeaker();
-  clearSelectedFile();
-  createChat();
-});
-
-/* ---------------- IMAGE VIEWER ---------------- */
-
-function closeImageViewer() {
-  imageViewer?.remove();
-  imageViewer = null;
-}
-
-function openImageViewer(src, alt = "Image preview") {
-  closeImageViewer();
-
-  const overlay = document.createElement("div");
-
-  overlay.style.cssText =
-    "position:fixed;inset:0;z-index:100000;" +
-    "background:rgba(0,0,0,.96);" +
-    "display:flex;align-items:center;" +
-    "justify-content:center;padding:16px;";
-
-  const image = document.createElement("img");
-  image.src = src;
-  image.alt = alt;
-
-  image.style.cssText =
-    "max-width:100%;max-height:88vh;" +
-    "object-fit:contain;border-radius:10px;";
-
-  const close = document.createElement("button");
-  close.type = "button";
-  close.textContent = "✕";
-
-  close.style.cssText =
-    "position:absolute;top:16px;right:16px;" +
-    "width:44px;height:44px;border:0;" +
-    "border-radius:50%;background:#292929;" +
-    "color:white;font-size:22px;";
-
-  close.addEventListener("click", closeImageViewer);
-
-  overlay.addEventListener("click", event => {
-    if (event.target === overlay) closeImageViewer();
-  });
-
-  overlay.append(image, close);
-  document.body.appendChild(overlay);
-
-  imageViewer = overlay;
-}
-
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    closeImageViewer();
-    closeChatMenu();
-  }
-});
-
-/* =====================================================
-   PART 2 - MESSAGE RENDERING
-===================================================== */
-
-function createActionButton(label, action, title) {
-  const button = document.createElement("button");
-
-  button.type = "button";
-  button.textContent = label;
-  button.dataset.action = action;
-  button.title = title;
-  button.setAttribute("aria-label", title);
-
-  button.style.cssText =
-    "border:1px solid var(--border,#343b60);" +
-    "background:transparent;color:inherit;" +
-    "padding:6px 9px;border-radius:8px;" +
-    "cursor:pointer;font-size:13px;margin:3px;";
-
-  return button;
-}
-
-/* IMAGE DOWNLOAD */
-
-async function downloadImage(url) {
-  try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error("Image download failed");
-    }
-
-    const blob = await response.blob();
-    const objectURL = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = objectURL;
-    link.download = "k-ultra-ai-image.png";
-
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(
-      () => URL.revokeObjectURL(objectURL),
-      2000
-    );
-
-  } catch (error) {
-    console.error("Download error:", error);
-    window.open(url, "_blank", "noopener");
-  }
-}
-
-/* IMAGE CARD */
-
-function addImageCard(parent, src, alt) {
-  const card = document.createElement("div");
-  card.style.cssText = "margin-top:10px;max-width:100%;";
-
-  const image = document.createElement("img");
-  image.src = src;
-  image.alt = alt || "AI image";
-  image.loading = "lazy";
-
-  image.style.cssText =
-    "display:block;max-width:100%;" +
-    "max-height:420px;width:auto;height:auto;" +
-    "object-fit:contain;border-radius:12px;" +
-    "cursor:zoom-in;";
-
-  image.addEventListener("click", () => {
-    openImageViewer(src, alt);
-  });
-
-  const download = document.createElement("button");
-  download.type = "button";
-  download.textContent = "⬇️ Download Image";
-
-  download.style.cssText =
-    "margin-top:8px;padding:8px 13px;" +
-    "border:0;border-radius:8px;" +
-    "background:#7138ff;color:white;cursor:pointer;";
-
-  download.addEventListener("click", () => {
-    downloadImage(src);
-  });
-
-  card.append(image, download);
-  parent.appendChild(card);
-}
-
-/* RENDER CONTENT */
-
-function renderContent(container, content) {
-  const text = String(content || "");
-
-  const pattern =
-    /!\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^)]+)\)/g;
-
-  let lastIndex = 0;
-  let match;
-
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      container.appendChild(
-        document.createTextNode(
-          text.slice(lastIndex, match.index)
-        )
-      );
-    }
-
-    addImageCard(container, match[2], match[1]);
-    lastIndex = pattern.lastIndex;
-  }
-
-  if (lastIndex < text.length) {
-    container.appendChild(
-      document.createTextNode(text.slice(lastIndex))
-    );
-  }
-
-  if (lastIndex === 0) {
-    const directPattern =
-      /(^|\n)(https?:\/\/[^\s]+\.(?:png|jpe?g|gif|webp)(?:\?[^\s]*)?)/gi;
-
-    const found = [];
-    let directMatch;
-
-    while (
-      (directMatch = directPattern.exec(text)) !== null
-    ) {
-      found.push({
-        start: directMatch.index,
-        url: directMatch[2],
-        end: directPattern.lastIndex
-      });
-    }
-
-    if (found.length) {
-      container.replaceChildren();
-
-      let position = 0;
-
-      found.forEach(item => {
-        if (item.start > position) {
-          container.appendChild(
-            document.createTextNode(
-              text.slice(position, item.start)
-            )
-          );
-        }
-
-        addImageCard(container, item.url, "AI image");
-        position = item.end;
-      });
-
-      if (position < text.length) {
-        container.appendChild(
-          document.createTextNode(text.slice(position))
-        );
-      }
-    }
-  }
-
-  container.style.whiteSpace = "pre-wrap";
-  container.style.overflowWrap = "anywhere";
-}
-
-/* MESSAGE ACTIONS UI */
-
-function createMessageActions(message) {
-  const actions = document.createElement("div");
-  actions.className = "message-actions";
-
-  actions.style.cssText =
-    "display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;";
-
-  actions.append(
-    createActionButton("📋 Copy", "copy", "Copy message"),
-    createActionButton("🔊 Speaker", "speak", "Listen to message"),
-    createActionButton("⋯ More", "more", "More options")
-  );
-
-  if (message.role === "user") {
-    actions.appendChild(
-      createActionButton("✏️ Edit", "edit", "Edit message")
-    );
-  } else {
-    actions.appendChild(
-      createActionButton(
-        "🔄 Regenerate",
-        "regenerate",
-        "Regenerate response"
-      )
-    );
-  }
-
-  actions.appendChild(
-    createActionButton("🗑️ Delete", "delete", "Delete message")
-  );
-
-  return actions;
-}
-
-/* ADD MESSAGE */
-
-function addMessageElement(message, index) {
-  const wrapper = document.createElement("div");
-
-  wrapper.className =
-    "message " +
-    (message.role === "user"
-      ? "user-message"
-      : "assistant-message");
-
-  wrapper.dataset.messageId = message.id;
-  wrapper.dataset.index = String(index);
-
-  const bubble = document.createElement("div");
-  bubble.className = "message-bubble";
-
-  renderContent(bubble, message.content);
-
-  wrapper.append(
-    bubble,
-    createMessageActions(message)
-  );
-
-  chat.appendChild(wrapper);
-
-  return wrapper;
-}
-
-/* RENDER CHAT */
-
-function renderChat() {
-  if (!chat) return;
-
-  chat.replaceChildren();
-
-  const messages = currentChat()?.messages || [];
-
-  if (welcome) welcome.hidden = messages.length > 0;
-  if (suggestions) suggestions.hidden = messages.length > 0;
-
-  messages.forEach((message, index) => {
-    addMessageElement(message, index);
-  });
-
-  chat.scrollTop = chat.scrollHeight;
-}
-
-/* ADD MESSAGE TO HISTORY */
-
-function addMessage(role, content) {
-  const session = currentChat();
-  if (!session) return null;
-
-  const message = normalizeMessage({
-    id: createId(),
-    role,
-    content,
-    createdAt: Date.now()
-  });
-
-  session.messages.push(message);
-  session.updatedAt = Date.now();
-
-  if (session.title === "New Chat" && role === "user") {
-    session.title = content.slice(0, 40) || "New Chat";
-  }
-
-  saveData();
-  renderChat();
-  renderChatList();
-
-  return message;
-}
-
-/* =====================================================
-   PART 3 - CHAT HISTORY & MENU
-===================================================== */
-
-function closeChatMenu() {
-  chatMenuElement?.remove();
-  chatMenuElement = null;
-}
-
-/* PASSCODE */
-
-async function hashChatPasscode(passcode) {
-  if (!window.crypto?.subtle) {
-    throw new Error("Secure passcode is not supported.");
-  }
-
-  const data = new TextEncoder().encode(passcode);
-
-  const hash = await window.crypto.subtle.digest(
-    "SHA-256",
-    data
-  );
-
-  return Array.from(new Uint8Array(hash))
-    .map(byte => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/* MENU OPTION */
-
-function addChatMenuOption(menu, label, callback, danger = false) {
-  const button = document.createElement("button");
-
-  button.type = "button";
-  button.textContent = label;
-
-  button.style.cssText = `
-    display:block;
-    width:100%;
-    text-align:left;
-    padding:14px 16px;
-    border:0;
-    border-radius:9px;
-    background:transparent;
-    color:${danger ? "#e5485d" : "inherit"};
-    font-size:16px;
-    cursor:pointer;
-  `;
-
-  button.addEventListener("click", async () => {
-    closeChatMenu();
-
-    try {
-      await callback();
-    } catch (error) {
-      console.error(error);
-      alert(error.message || "Action failed.");
-    }
-  });
-
-  menu.appendChild(button);
-}
-
-/* SHOW CHAT MENU */
-
-function showChatMenu(item) {
-  closeChatMenu();
-
-  const overlay = document.createElement("div");
-
-  overlay.style.cssText = `
-    position:fixed;
-    inset:0;
-    z-index:99990;
-    background:rgba(0,0,0,.38);
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    padding:16px;
-  `;
-
-  const menu = document.createElement("div");
-
-  menu.style.cssText = `
-    width:min(400px,100%);
-    max-height:80vh;
-    overflow-y:auto;
-    padding:10px;
-    border-radius:20px;
-    background:var(--panel,#fff);
-    color:var(--text,#111);
-    box-shadow:0 10px 40px rgba(0,0,0,.25);
-  `;
-
-  addChatMenuOption(
-    menu,
-    item.pinned ? "📌 Unpin" : "📌 Pin",
-    () => {
-      item.pinned = !item.pinned;
-      saveData();
-      renderChatList();
-    }
-  );
-
-  addChatMenuOption(menu, "✏️ Rename", () => {
-    const name = prompt("Enter new chat name:", item.title);
-
-    if (name?.trim()) {
-      item.title = name.trim().slice(0, 70);
-      saveData();
-      renderChatList();
-    }
-  });
-
-  addChatMenuOption(menu, "📁 Add to project", () => {
-    const project = prompt(
-      "Enter project name:",
-      item.project || ""
-    );
-
-    if (project === null) return;
-
-    item.project = project.trim();
-    saveData();
-    renderChatList();
-  });
-
-  addChatMenuOption(
-    menu,
-    item.archived ? "📤 Unarchive" : "🗃️ Archive",
-    () => {
-      item.archived = !item.archived;
-
-      if (item.id === currentChatId && item.archived) {
-        currentChatId =
-          conversations.find(
-            c => !c.archived && c.id !== item.id
-          )?.id || "";
-      }
-
-      if (!currentChatId) {
-        createChat();
-      } else {
-        saveData();
-        renderChat();
-        renderChatList();
-      }
-    }
-  );
-
-  addChatMenuOption(
-    menu,
-    item.lockHash ? "🔓 Unlock chat" : "🔒 Lock chat",
-    async () => {
-      if (item.lockHash) {
-        const oldPasscode = prompt("Enter current passcode:");
-        if (oldPasscode === null) return;
-
-        const hash = await hashChatPasscode(oldPasscode);
-
-        if (hash !== item.lockHash) {
-          alert("Incorrect passcode!");
-          return;
-        }
-
-        item.lockHash = "";
-        saveData();
-        renderChatList();
-        alert("Chat unlocked.");
-        return;
-      }
-
-      const passcode = prompt(
-        "Create passcode (at least 4 characters):"
-      );
-
-      if (passcode === null) return;
-
-      if (passcode.length < 4) {
-        alert("Passcode must contain at least 4 characters.");
-        return;
-      }
-
-      const confirmation = prompt("Confirm passcode:");
-
-      if (confirmation !== passcode) {
-        alert("Passcodes do not match.");
-        return;
-      }
-
-      item.lockHash = await hashChatPasscode(passcode);
-
-      saveData();
-      renderChatList();
-      alert("Chat locked.");
-    }
-  );
-
-  addChatMenuOption(
-    menu,
-    "🗑️ Delete",
-    () => {
-      if (!confirm("Delete this conversation permanently?")) {
-        return;
-      }
-
-      conversations = conversations.filter(
-        c => c.id !== item.id
-      );
-
-      if (currentChatId === item.id) {
-        currentChatId = "";
-      }
-
-      if (!currentChat()) {
-        currentChatId =
-          conversations.find(c => !c.archived)?.id || "";
-      }
-
-      if (!currentChatId) {
-        createChat();
-      } else {
-        saveData();
-        renderChat();
-        renderChatList();
-      }
-    },
-    true
-  );
-
-  overlay.appendChild(menu);
-
-  overlay.addEventListener("click", event => {
-    if (event.target === overlay) closeChatMenu();
-  });
-
-  document.body.appendChild(overlay);
-  chatMenuElement = overlay;
-}
-
-/* OPEN CHAT */
-
-async function openChatItem(item) {
-  if (item.lockHash) {
-    const passcode = prompt("Enter chat passcode:");
-
-    if (passcode === null) return;
-
-    try {
-      const hash = await hashChatPasscode(passcode);
-
-      if (hash !== item.lockHash) {
-        alert("Incorrect passcode!");
-        return;
-      }
-    } catch (error) {
-      alert(error.message);
-      return;
-    }
-  }
-
-  stopGeneration();
-
-  currentChatId = item.id;
-
-  saveData();
-  renderChat();
-  renderChatList();
-}
-
-/* LONG PRESS */
-
-function attachLongPress(element, item) {
-  let timer = null;
-
-  const start = () => {
-    clearTimeout(timer);
-
-    timer = setTimeout(() => {
-      suppressChatClick = true;
-      showChatMenu(item);
-
-      setTimeout(() => {
-        suppressChatClick = false;
-      }, 700);
-    }, 550);
-  };
-
-  const cancel = () => {
-    clearTimeout(timer);
-    timer = null;
-  };
-
-  element.addEventListener("touchstart", start, {
-    passive: true
-  });
-
-  element.addEventListener("touchend", cancel);
-  element.addEventListener("touchmove", cancel);
-  element.addEventListener("touchcancel", cancel);
-
-  element.addEventListener("contextmenu", event => {
-    event.preventDefault();
-    suppressChatClick = true;
-    showChatMenu(item);
-
-    setTimeout(() => {
-      suppressChatClick = false;
-    }, 700);
-  });
-
-  element.addEventListener("mousedown", start);
-  element.addEventListener("mouseup", cancel);
-  element.addEventListener("mouseleave", cancel);
-}
-
-/* RENDER CHAT LIST */
-
-function renderChatList() {
-  if (!chatSessions) return;
-
-  chatSessions.replaceChildren();
-
-  const query =
-    searchInput?.value.trim().toLowerCase() || "";
-
-  const sortedChats = [...conversations]
-    .filter(item => !item.archived)
-    .filter(item =>
-      item.title.toLowerCase().includes(query)
-    )
-    .sort((a, b) => {
-      if (a.pinned !== b.pinned) {
-        return Number(b.pinned) - Number(a.pinned);
-      }
-
-      return b.updatedAt - a.updatedAt;
-    });
-
-
-  if (!sortedChats.length) {
-    const empty = document.createElement("p");
-    empty.textContent = "No chats found.";
-    empty.style.cssText =
-      "padding:12px;color:var(--muted);font-size:13px;";
-    chatSessions.appendChild(empty);
-    return;
-  }
-
-  sortedChats.forEach(item => {
-    const row = document.createElement("div");
-    row.className = "chat-row";
-
-    const open = document.createElement("button");
-    open.type = "button";
-    open.className = "open-chat";
-    open.textContent = (item.pinned ? "📌 " : "") + item.title;
-
-    if (item.id === currentChatId) {
-      open.classList.add("active");
-    }
-
-    open.addEventListener("click", () => {
-      if (suppressChatClick) {
-        suppressChatClick = false;
-        return;
-      }
-      openChatItem(item);
-    });
-
-    const more = document.createElement("button");
-    more.type = "button";
-    more.textContent = "⋯";
-    more.setAttribute("aria-label", "Chat options");
-
-    more.addEventListener("click", event => {
-      event.stopPropagation();
-      showChatMenu(item);
-    });
-
-    row.append(open, more);
-    attachLongPress(row, item);
-    chatSessions.appendChild(row);
-  });
-}
-
-/* =====================================================
-   PART 4 - AI CONNECTION & MESSAGE SENDING
-===================================================== */
-
-/* ADD LOADING MESSAGE */
-
-function showLoading() {
-  if (!chat) return;
-
-  const loading = document.createElement("div");
-  loading.id = "aiLoading";
-  loading.className = "message assistant-message";
-
-  const bubble = document.createElement("div");
-  bubble.className = "message-bubble";
-  bubble.textContent = "K-ULTRA AI is thinking...";
-
-  loading.appendChild(bubble);
-  chat.appendChild(loading);
-  chat.scrollTop = chat.scrollHeight;
-}
-
-function hideLoading() {
-  $("aiLoading")?.remove();
-}
-
-/* ADD MESSAGE */
-
-function addMessage(role, content) {
-  const session = currentChat();
-  if (!session) return null;
-
-  const message = normalizeMessage({
-    id: createId(),
-    role,
-    content,
-    createdAt: Date.now()
-  });
-
-  session.messages.push(message);
-  session.updatedAt = Date.now();
-
-  if (session.title === "New Chat" && role === "user") {
-    session.title = content.slice(0, 40) || "New Chat";
-  }
-
-  saveData();
-  renderChat();
-  renderChatList();
-
-  return message;
-}
-
-/* SEND MESSAGE */
-
-async function sendMessage(message, options = {}) {
-  const text = String(message || "").trim();
-
-  if (!text || isGenerating) return;
-
-  const session = currentChat();
-  if (!session) return;
-
-  const sessionId = session.id;
-
-  stopSpeaker();
-
-  if (options.regenerate) {
-    const lastUserIndex = session.messages
-      .map(item => item.role)
-      .lastIndexOf("user");
-
-    if (lastUserIndex === -1) return;
-
-    session.messages = session.messages.slice(
-      0,
-      lastUserIndex + 1
-    );
-
-    saveData();
-    renderChat();
-  } else {
-    const finalMessage = selectedFileText
-      ? text + "\n\nAttached file: " +
-        selectedFileName + "\n\n" + selectedFileText
-      : text;
-
-    addMessage("user", finalMessage);
-    clearSelectedFile();
-  }
-
-  if (input) input.value = "";
-
-  controller = new AbortController();
-  setLoading(true);
-  showLoading();
-
-  try {
-    const history = session.messages
-      .slice(-20)
-      .map(item => ({
-        role: item.role === "assistant"
-          ? "assistant"
-          : "user",
-        content: item.content
-      }));
-
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: text,
-        history: history
-      }),
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        "Server error: " + response.status
-      );
-    }
-
-    const data = await response.json();
-
-    const answer =
-      data.response ||
-      data.reply ||
-      data.message ||
-      data.output ||
-      data.result;
-
-    if (!answer || typeof answer !== "string") {
-      throw new Error(
-        data.error || "No valid AI response received."
-      );
-    }
-
-    const activeSession = conversations.find(
-      item => item.id === sessionId
-    );
-
-    if (activeSession) {
-      const aiMessage = normalizeMessage({
-        role: "assistant",
-        content: answer
-      });
-
-      activeSession.messages.push(aiMessage);
-      activeSession.updatedAt = Date.now();
-
-      saveData();
-
-      if (currentChatId === sessionId) {
-        renderChat();
-      }
-
-      renderChatList();
-    }
-
-  } catch (error) {
-    if (error.name === "AbortError") {
-      return;
-    }
-
-    console.error("AI connection error:", error);
-
-    if (currentChatId === sessionId) {
-      addMessage(
-        "assistant",
-        "Sorry! K-ULTRA AI could not connect to the server.\n\n" +
-        error.message +
-        "\n\nPlease check your internet connection and try again."
-      );
-    }
-
-  } finally {
-    hideLoading();
-    controller = null;
-    setLoading(false);
-  }
-}
-
-/* REGENERATE RESPONSE */
-
-async function regenerateLastResponse() {
-  const session = currentChat();
-
-  if (!session || isGenerating) return;
-
-  const lastUser = [...session.messages]
-    .reverse()
-    .find(item => item.role === "user");
-
-  if (!lastUser) {
-    alert("No user message to regenerate.");
-    return;
-  }
-
-  await sendMessage(lastUser.content, {
-    regenerate: true
-  });
-}
-
-/* =====================================================
-   PART 5 - MESSAGE ACTIONS
-===================================================== */
-
-/* COPY */
-
-async function copyMessage(message) {
-  try {
-    await navigator.clipboard.writeText(message);
-    alert("Message copied!");
-  } catch (error) {
-    const area = document.createElement("textarea");
-    area.value = message;
-    document.body.appendChild(area);
-    area.select();
-
-    const copied = document.execCommand("copy");
-    area.remove();
-
-    alert(copied ? "Message copied!" : "Copy failed.");
-  }
-}
-
 /* SPEAKER */
+
+function stopSpeaker() {
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+  }
+}
 
 function speakMessage(message) {
   if (!("speechSynthesis" in window)) {
@@ -1208,25 +252,706 @@ function speakMessage(message) {
   speechSynthesis.speak(speech);
 }
 
-/* STOP SPEAKER */
+/* IMAGE VIEWER */
 
-function stopSpeaker() {
-  if ("speechSynthesis" in window) {
-    speechSynthesis.cancel();
+function openImageViewer(src, alt = "AI Image") {
+  const overlay = document.createElement("div");
+
+  overlay.style.cssText =
+    "position:fixed;inset:0;z-index:100000;" +
+    "background:rgba(0,0,0,.96);" +
+    "display:flex;align-items:center;" +
+    "justify-content:center;padding:16px;";
+
+  const image = document.createElement("img");
+  image.src = src;
+  image.alt = alt;
+
+  image.style.cssText =
+    "max-width:100%;max-height:88vh;" +
+    "object-fit:contain;border-radius:12px;";
+
+  const close = document.createElement("button");
+  close.textContent = "✕";
+  close.style.cssText =
+    "position:absolute;top:16px;right:16px;" +
+    "padding:12px;border:0;border-radius:50%;" +
+    "background:#333;color:white;font-size:20px;";
+
+  close.onclick = () => overlay.remove();
+
+  overlay.onclick = event => {
+    if (event.target === overlay) overlay.remove();
+  };
+
+  overlay.append(image, close);
+  document.body.appendChild(overlay);
+}
+
+/* IMAGE DOWNLOAD */
+
+async function downloadImage(url) {
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) throw new Error("Download failed");
+
+    const blob = await response.blob();
+    const objectURL = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = objectURL;
+    link.download = "k-ultra-ai-image.png";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(objectURL), 2000);
+
+  } catch (error) {
+    console.error(error);
+    window.open(url, "_blank", "noopener");
   }
 }
 
-/* MESSAGE ACTION HANDLER */
+/* IMAGE CARD */
+
+function addImageCard(parent, src, alt) {
+  const card = document.createElement("div");
+  card.style.cssText = "margin-top:12px;max-width:100%;";
+
+  const image = document.createElement("img");
+  image.src = src;
+  image.alt = alt || "AI generated image";
+  image.loading = "lazy";
+
+  image.style.cssText =
+    "display:block;max-width:100%;" +
+    "max-height:420px;width:auto;height:auto;" +
+    "object-fit:contain;border-radius:12px;" +
+    "cursor:zoom-in;";
+
+  image.onclick = () => openImageViewer(src, alt);
+
+  const button = document.createElement("button");
+  button.textContent = "⬇️ Download Image";
+
+  button.style.cssText =
+    "margin-top:8px;padding:9px 14px;" +
+    "border:0;border-radius:8px;" +
+    "background:#7138ff;color:white;cursor:pointer;";
+
+  button.onclick = () => downloadImage(src);
+
+  card.append(image, button);
+  parent.appendChild(card);
+}
+
+/* RENDER CONTENT */
+
+function renderContent(container, content) {
+  const text = String(content || "");
+
+  const pattern =
+    /!\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^)]+)\)/g;
+
+  let last = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    container.appendChild(
+      document.createTextNode(text.slice(last, match.index))
+    );
+
+    addImageCard(container, match[2], match[1]);
+    last = pattern.lastIndex;
+  }
+
+  if (last < text.length) {
+    container.appendChild(
+      document.createTextNode(text.slice(last))
+    );
+  }
+
+  container.style.whiteSpace = "pre-wrap";
+  container.style.overflowWrap = "anywhere";
+}
+
+/* MESSAGE ACTION BUTTON */
+
+function actionButton(label, action) {
+  const button = document.createElement("button");
+
+  button.type = "button";
+  button.textContent = label;
+  button.dataset.action = action;
+
+  button.style.cssText =
+    "border:1px solid var(--border,#343b60);" +
+    "background:transparent;color:inherit;" +
+    "padding:6px 9px;border-radius:8px;" +
+    "cursor:pointer;font-size:13px;margin:3px;";
+
+  return button;
+}
+
+/* MESSAGE ACTIONS */
+
+function createMessageActions(message) {
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+
+  actions.style.cssText =
+    "display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;";
+
+  actions.append(
+    actionButton("📋 Copy", "copy"),
+    actionButton("🔊 Speaker", "speak"),
+    actionButton("⋯ More", "more")
+  );
+
+  if (message.role === "user") {
+    actions.appendChild(actionButton("✏️ Edit", "edit"));
+  } else {
+    actions.appendChild(actionButton("🔄 Regenerate", "regenerate"));
+  }
+
+  actions.appendChild(actionButton("🗑️ Delete", "delete"));
+
+  return actions;
+}
+
+/* MESSAGE ELEMENT */
+
+function addMessageElement(message, index) {
+  const wrapper = document.createElement("div");
+
+  wrapper.className =
+    "message " +
+    (message.role === "user"
+      ? "user-message"
+      : "assistant-message");
+
+  wrapper.dataset.messageId = message.id;
+  wrapper.dataset.index = String(index);
+
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+
+  renderContent(bubble, message.content);
+
+  const time = document.createElement("small");
+  time.textContent = getTime(message.createdAt);
+  time.style.cssText =
+    "display:block;margin-top:6px;opacity:.55;font-size:11px;";
+
+  bubble.appendChild(time);
+
+  wrapper.append(bubble, createMessageActions(message));
+  chat.appendChild(wrapper);
+}
+
+/* RENDER CHAT */
+
+function renderChat() {
+  if (!chat) return;
+
+  chat.replaceChildren();
+
+  const messages = currentChat()?.messages || [];
+
+  if (welcome) welcome.hidden = messages.length > 0;
+  if (suggestions) suggestions.hidden = messages.length > 0;
+
+  messages.forEach(addMessageElement);
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+/* ADD MESSAGE */
+
+function addMessage(role, content) {
+  const session = currentChat();
+  if (!session) return null;
+
+  const message = normalizeMessage({
+    role,
+    content,
+    createdAt: Date.now()
+  });
+
+  session.messages.push(message);
+  session.updatedAt = Date.now();
+
+  if (session.title === "New Chat" && role === "user") {
+    session.title = content.slice(0, 40) || "New Chat";
+  }
+
+  saveData();
+  renderChat();
+  renderChatList();
+
+  return message;
+}
+
+/* CHAT MENU */
+
+function closeChatMenu() {
+  document.getElementById("chatMenuOverlay")?.remove();
+}
+
+async function hashPasscode(passcode) {
+  if (!crypto?.subtle) {
+    throw new Error("Secure passcode unavailable.");
+  }
+
+  const data = new TextEncoder().encode(passcode);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function showChatMenu(item) {
+  closeChatMenu();
+
+  const overlay = document.createElement("div");
+  overlay.id = "chatMenuOverlay";
+
+  overlay.style.cssText =
+    "position:fixed;inset:0;z-index:99990;" +
+    "background:rgba(0,0,0,.4);" +
+    "display:flex;align-items:flex-end;" +
+    "justify-content:center;padding:16px;";
+
+  const menu = document.createElement("div");
+
+  menu.style.cssText =
+    "width:min(400px,100%);padding:12px;" +
+    "border-radius:18px;background:var(--panel,#fff);" +
+    "color:var(--text,#111);";
+
+  const options = [
+    [item.pinned ? "📌 Unpin" : "📌 Pin", () => {
+      item.pinned = !item.pinned;
+    }],
+    ["✏️ Rename", () => {
+      const name = prompt("New chat name:", item.title);
+      if (name?.trim()) item.title = name.trim().slice(0, 70);
+    }],
+    ["📁 Add to project", () => {
+      const project = prompt("Project name:", item.project);
+      if (project !== null) item.project = project.trim();
+    }],
+    [item.archived ? "📤 Unarchive" : "🗃️ Archive", () => {
+      item.archived = !item.archived;
+
+      if (item.archived && currentChatId === item.id) {
+        currentChatId =
+          conversations.find(c => !c.archived && c.id !== item.id)?.id || "";
+      }
+
+      if (!currentChatId) createChat();
+    }],
+    [item.lockHash ? "🔓 Unlock chat" : "🔒 Lock chat", async () => {
+      if (item.lockHash) {
+        const pass = prompt("Enter current passcode:");
+        if (pass === null) return;
+
+        if (await hashPasscode(pass) !== item.lockHash) {
+          alert("Incorrect passcode!");
+          return;
+        }
+
+        item.lockHash = "";
+        alert("Chat unlocked.");
+        return;
+      }
+
+      const pass = prompt("Create passcode (minimum 4 characters):");
+      if (pass === null) return;
+      if (pass.length < 4) {
+        alert("Passcode is too short.");
+        return;
+      }
+
+      const confirmPass = prompt("Confirm passcode:");
+      if (confirmPass !== pass) {
+        alert("Passcodes do not match.");
+        return;
+      }
+
+      item.lockHash = await hashPasscode(pass);
+      alert("Chat locked.");
+    }],
+    ["🗑️ Delete", () => {
+      if (!confirm("Delete this chat permanently?")) return;
+
+      conversations = conversations.filter(c => c.id !== item.id);
+
+      if (currentChatId === item.id) {
+        currentChatId =
+          conversations.find(c => !c.archived)?.id || "";
+      }
+
+      if (!currentChatId) createChat();
+    }]
+  ];
+
+  options.forEach(([label, callback]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+
+    button.style.cssText =
+      "display:block;width:100%;padding:13px;" +
+      "text-align:left;border:0;border-radius:8px;" +
+      "background:transparent;color:inherit;font-size:15px;";
+
+    button.onclick = async () => {
+      closeChatMenu();
+
+      try {
+        await callback();
+        saveData();
+        renderChat();
+        renderChatList();
+      } catch (error) {
+        alert(error.message);
+      }
+    };
+
+    menu.appendChild(button);
+  });
+
+  overlay.appendChild(menu);
+
+  overlay.onclick = event => {
+    if (event.target === overlay) closeChatMenu();
+  };
+
+  document.body.appendChild(overlay);
+}
+
+/* OPEN CHAT */
+
+async function openChatItem(item) {
+  if (item.lockHash) {
+    const pass = prompt("Enter chat passcode:");
+    if (pass === null) return;
+
+    try {
+      if (await hashPasscode(pass) !== item.lockHash) {
+        alert("Incorrect passcode!");
+        return;
+      }
+    } catch (error) {
+      alert(error.message);
+      return;
+    }
+  }
+
+  stopGeneration();
+  stopSpeaker();
+
+  currentChatId = item.id;
+
+  saveData();
+  renderChat();
+  renderChatList();
+}
+
+/* RENDER CHAT LIST */
+
+function renderChatList() {
+  if (!chatSessions) return;
+
+  chatSessions.replaceChildren();
+
+  const query = searchInput?.value.trim().toLowerCase() || "";
+
+  const items = [...conversations]
+    .filter(c => !c.archived)
+    .filter(c => c.title.toLowerCase().includes(query))
+    .sort((a, b) => {
+      if (a.pinned !== b.pinned) {
+        return Number(b.pinned) - Number(a.pinned);
+      }
+      return b.updatedAt - a.updatedAt;
+    });
+
+  if (!items.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No chats found.";
+    chatSessions.appendChild(empty);
+    return;
+  }
+
+  items.forEach(item => {
+    const row = document.createElement("div");
+    row.className = "chat-row";
+
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "open-chat";
+    open.textContent = (item.pinned ? "📌 " : "") + item.title;
+
+    if (item.id === currentChatId) {
+      open.classList.add("active");
+    }
+
+    open.onclick = () => openChatItem(item);
+
+    const more = document.createElement("button");
+    more.type = "button";
+    more.textContent = "⋯";
+    more.setAttribute("aria-label", "Chat options");
+    more.onclick = () => showChatMenu(item);
+
+    row.append(open, more);
+    chatSessions.appendChild(row);
+  });
+}
+
+searchInput?.addEventListener("input", renderChatList);
+
+/* NEW CHAT */
+
+newChatBtn?.addEventListener("click", () => {
+  stopGeneration();
+  stopSpeaker();
+  clearSelectedFile();
+  createChat();
+});
+
+/* LOADING MESSAGE */
+
+function showLoading() {
+  if (!chat) return;
+
+  hideLoading();
+
+  const loading = document.createElement("div");
+  loading.id = "aiLoading";
+  loading.className = "message assistant-message";
+
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+  bubble.textContent = "K-ULTRA AI is thinking...";
+
+  loading.appendChild(bubble);
+  chat.appendChild(loading);
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function hideLoading() {
+  $("aiLoading")?.remove();
+}
+
+/* CLEAR FILE */
+
+function clearSelectedFile() {
+  selectedFileText = "";
+  selectedFileName = "";
+
+  if (fileInput) fileInput.value = "";
+
+  if (filePreview) {
+    filePreview.replaceChildren();
+    filePreview.hidden = true;
+  }
+}
+
+/* SEND MESSAGE */
+
+async function sendMessage(message, options = {}) {
+  const text = String(message || "").trim();
+
+  if (!text || isGenerating) return;
+
+  const session = currentChat();
+  if (!session) return;
+
+  const sessionId = session.id;
+
+  stopSpeaker();
+
+  if (options.regenerate) {
+    const lastUserIndex = session.messages
+      .map(m => m.role)
+      .lastIndexOf("user");
+
+    if (lastUserIndex < 0) return;
+
+    session.messages = session.messages.slice(0, lastUserIndex + 1);
+    saveData();
+    renderChat();
+
+  } else {
+    const finalText = selectedFileText
+      ? text + "\n\nAttached file: " +
+        selectedFileName + "\n\n" + selectedFileText
+      : text;
+
+    addMessage("user", finalText);
+    clearSelectedFile();
+  }
+
+  if (input) input.value = "";
+
+  controller = new AbortController();
+  setLoading(true);
+  showLoading();
+
+  try {
+    const history = session.messages.slice(-20).map(m => ({
+      role: m.role,
+      content: m.content
+    }));
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        history
+      }),
+      signal: controller.signal
+    });
+
+    let data;
+
+    try {
+      data = await response.json();
+    } catch {
+      throw new Error("Invalid server response.");
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Server error: " + response.status);
+    }
+
+    const answer =
+      data.response ||
+      data.reply ||
+      data.message ||
+      data.output ||
+      data.result;
+
+    if (typeof answer !== "string" || !answer.trim()) {
+      throw new Error(data.error || "No valid AI response received.");
+    }
+
+    // IMAGE RESPONSE SUPPORT
+    let finalAnswer = answer.trim();
+
+    if (typeof data.image === "string" && data.image) {
+      finalAnswer +=
+        "\n\n![K-ULTRA AI Generated Image](" +
+        data.image + ")";
+    }
+
+    const activeSession = conversations.find(
+      c => c.id === sessionId
+    );
+
+    if (activeSession) {
+      activeSession.messages.push(normalizeMessage({
+        role: "assistant",
+        content: finalAnswer,
+        createdAt: Date.now()
+      }));
+
+      activeSession.updatedAt = Date.now();
+
+      saveData();
+
+      if (currentChatId === sessionId) {
+        renderChat();
+      }
+
+      renderChatList();
+    }
+
+  } catch (error) {
+    if (error.name === "AbortError") return;
+
+    console.error("AI connection error:", error);
+
+    if (currentChatId === sessionId) {
+      addMessage(
+        "assistant",
+        "Sorry! K-ULTRA AI could not connect.\n\n" +
+        error.message +
+        "\n\nPlease check your internet connection and try again."
+      );
+    }
+
+  } finally {
+    hideLoading();
+    controller = null;
+    setLoading(false);
+  }
+}
+
+/* REGENERATE */
+
+async function regenerateLastResponse() {
+  const session = currentChat();
+
+  if (!session || isGenerating) return;
+
+  const lastUser = [...session.messages]
+    .reverse()
+    .find(m => m.role === "user");
+
+  if (!lastUser) {
+    alert("No user message to regenerate.");
+    return;
+  }
+
+  // Remove the previous assistant response and resend.
+  await sendMessage(lastUser.content, {
+    regenerate: true
+  });
+}
+
+/* COPY */
+
+async function copyMessage(message) {
+  try {
+    await navigator.clipboard.writeText(message);
+    alert("Message copied!");
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = message;
+
+    document.body.appendChild(area);
+    area.select();
+
+    const success = document.execCommand("copy");
+    area.remove();
+
+    alert(success ? "Message copied!" : "Copy failed.");
+  }
+}
+
+/* MESSAGE ACTIONS */
 
 async function handleMessageAction(action, messageId) {
   const session = currentChat();
   if (!session) return;
 
   const index = session.messages.findIndex(
-    item => item.id === messageId
+    m => m.id === messageId
   );
 
-  if (index === -1) return;
+  if (index < 0) return;
 
   const message = session.messages[index];
 
@@ -1250,7 +975,7 @@ async function handleMessageAction(action, messageId) {
       renderChatList();
       break;
 
-    case "edit":
+    case "edit": {
       if (message.role !== "user") return;
 
       const edited = prompt(
@@ -1268,33 +993,35 @@ async function handleMessageAction(action, messageId) {
 
       await sendMessage(edited.trim());
       break;
+    }
 
     case "regenerate":
-      if (message.role !== "assistant") return;
-
-      await regenerateLastResponse();
+      if (message.role === "assistant") {
+        await regenerateLastResponse();
+      }
       break;
 
-    case "more":
-      const option = prompt(
+    case "more": {
+      const choice = prompt(
         "1. Copy\n2. Speaker\n3. Delete\n4. Stop Speaker"
       );
 
-      if (option === "1") {
+      if (choice === "1") {
         await copyMessage(message.content);
-      } else if (option === "2") {
+      } else if (choice === "2") {
         speakMessage(message.content);
-      } else if (option === "3") {
+      } else if (choice === "3") {
         if (confirm("Delete this message?")) {
           session.messages.splice(index, 1);
           saveData();
           renderChat();
           renderChatList();
         }
-      } else if (option === "4") {
+      } else if (choice === "4") {
         stopSpeaker();
       }
       break;
+    }
   }
 }
 
@@ -1305,54 +1032,30 @@ chat?.addEventListener("click", event => {
   if (!button) return;
 
   const wrapper = button.closest(".message");
-  const messageId = wrapper?.dataset.messageId;
+  const id = wrapper?.dataset.messageId;
 
-  if (!messageId) return;
+  if (!id) return;
 
-  handleMessageAction(
-    button.dataset.action,
-    messageId
-  ).catch(error => {
-    console.error("Message action error:", error);
-    alert("Unable to complete this action.");
-  });
+  handleMessageAction(button.dataset.action, id)
+    .catch(error => {
+      console.error(error);
+      alert("Unable to complete action.");
+    });
 });
 
-/* =====================================================
-   PART 6 - FILE ATTACHMENTS
-===================================================== */
-
-function clearSelectedFile() {
-  selectedFileText = "";
-  selectedFileName = "";
-
-  if (fileInput) fileInput.value = "";
-
-  if (filePreview) {
-    filePreview.replaceChildren();
-    filePreview.hidden = true;
-  }
-}
-
-/* ATTACH BUTTON */
+/* FILE ATTACHMENT */
 
 attachBtn?.addEventListener("click", () => {
   fileInput?.click();
 });
-
-/* FILE SELECTION */
 
 fileInput?.addEventListener("change", async () => {
   const file = fileInput.files?.[0];
 
   if (!file) return;
 
-  const allowed = /\.(txt|md)$/i.test(file.name);
-
-  if (!allowed) {
-    alert(
-      "Currently, text files (.txt and .md) are supported for reading."
-    );
+  if (!/\.(txt|md)$/i.test(file.name)) {
+    alert("Only .txt and .md files are supported.");
     clearSelectedFile();
     return;
   }
@@ -1376,10 +1079,7 @@ fileInput?.addEventListener("change", async () => {
       const remove = document.createElement("button");
       remove.type = "button";
       remove.textContent = " ✕";
-      remove.addEventListener(
-        "click",
-        clearSelectedFile
-      );
+      remove.onclick = clearSelectedFile;
 
       filePreview.append(label, remove);
       filePreview.hidden = false;
@@ -1387,14 +1087,12 @@ fileInput?.addEventListener("change", async () => {
 
   } catch (error) {
     console.error(error);
-    alert("Unable to read this file.");
+    alert("Unable to read file.");
     clearSelectedFile();
   }
 });
 
-/* =====================================================
-   PART 7 - VOICE INPUT
-===================================================== */
+/* VOICE INPUT */
 
 function startVoiceInput() {
   const SpeechRecognition =
@@ -1419,21 +1117,14 @@ function startVoiceInput() {
 
   recognition.onstart = () => {
     isListening = true;
-
-    if (micBtn) {
-      micBtn.textContent = "🔴";
-    }
+    if (micBtn) micBtn.textContent = "🔴";
   };
 
   recognition.onresult = event => {
-    const transcript =
-      event.results[0][0].transcript;
+    const transcript = event.results[0][0].transcript;
 
     if (input) {
-      input.value = (
-        input.value + " " + transcript
-      ).trim();
-
+      input.value = (input.value + " " + transcript).trim();
       input.focus();
     }
   };
@@ -1444,10 +1135,7 @@ function startVoiceInput() {
 
   recognition.onend = () => {
     isListening = false;
-
-    if (micBtn) {
-      micBtn.textContent = "🎤";
-    }
+    if (micBtn) micBtn.textContent = "🎤";
   };
 
   try {
@@ -1457,14 +1145,7 @@ function startVoiceInput() {
   }
 }
 
-micBtn?.addEventListener(
-  "click",
-  startVoiceInput
-);
-
-/* =====================================================
-   PART 8 - FORM & SUGGESTIONS
-===================================================== */
+micBtn?.addEventListener("click", startVoiceInput);
 
 /* FORM SUBMIT */
 
@@ -1479,10 +1160,7 @@ form?.addEventListener("submit", event => {
 /* ENTER TO SEND */
 
 input?.addEventListener("keydown", event => {
-  if (
-    event.key === "Enter" &&
-    !event.shiftKey
-  ) {
+  if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault();
     form?.requestSubmit();
   }
@@ -1492,28 +1170,22 @@ input?.addEventListener("keydown", event => {
 
 suggestions?.addEventListener("click", event => {
   const button = event.target.closest("[data-prompt]");
-
   if (!button) return;
 
-  const promptText = button.dataset.prompt;
-
-  if (input) input.value = promptText;
+  if (input) input.value = button.dataset.prompt;
 
   form?.requestSubmit();
 });
 
-/* AUTO RESIZE INPUT */
+/* AUTO RESIZE */
 
 input?.addEventListener("input", () => {
   input.style.height = "auto";
-
   input.style.height =
     Math.min(input.scrollHeight, 150) + "px";
 });
 
-/* =====================================================
-   PART 9 - INITIALIZATION
-===================================================== */
+/* INITIALIZATION */
 
 function initializeApp() {
   loadData();
@@ -1522,14 +1194,12 @@ function initializeApp() {
     createChat();
   }
 
-  applyTheme(
-    storageGet(THEME_KEY, "dark")
-  );
+  applyTheme(storageGet(THEME_KEY, "dark"));
 
   renderChat();
   renderChatList();
 
-  console.log("K-ULTRA AI VERSION 25 READY");
+  console.log("K-ULTRA AI VERSION 26 READY 🚀");
 }
 
 /* CLEANUP */
@@ -1537,6 +1207,7 @@ function initializeApp() {
 window.addEventListener("beforeunload", () => {
   stopSpeaker();
   recognition?.stop();
+  controller?.abort();
 });
 
 /* START */
@@ -1552,5 +1223,5 @@ if (document.readyState === "loading") {
 }
 
 /* =====================================================
-   END OF K-ULTRA AI VERSION 25
+   END OF K-ULTRA AI VERSION 26
 ===================================================== */
