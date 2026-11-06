@@ -722,6 +722,8 @@ function renderChatList() {
 
 /* END PART 3 */
 
+  
+
 /* =========================================
    K-ULTRA AI - VERSION 24
    PART 4: MESSAGE ACTIONS & INITIALIZATION
@@ -750,7 +752,7 @@ async function copyMessage(message) {
 
 function speakMessage(message) {
   if (!("speechSynthesis" in window)) {
-    alert("Speaker not supported.");
+    alert("Speaker is not supported.");
     return;
   }
 
@@ -775,7 +777,7 @@ function stopSpeaker() {
 }
 
 
-/* MESSAGE ACTIONS */
+/* MESSAGE ACTION HANDLER */
 
 async function handleMessageAction(action, messageId) {
   const session = currentChat();
@@ -813,24 +815,27 @@ async function handleMessageAction(action, messageId) {
       break;
 
     case "regenerate":
-      await regenerateLastResponse();
+      if (message.role === "assistant") {
+        await regenerateLastResponse();
+      }
       break;
 
     case "edit":
       if (message.role !== "user") return;
 
       const edited = prompt(
-        "Edit message:",
+        "Edit your message:",
         message.content
       );
 
-      if (!edited?.trim()) return;
+      if (edited === null || !edited.trim()) return;
 
       session.messages = session.messages.slice(0, index);
+
       saveData();
       renderChat();
 
-      sendMessage(edited.trim());
+      await sendMessage(edited.trim());
       break;
 
     case "more":
@@ -843,7 +848,7 @@ async function handleMessageAction(action, messageId) {
       } else if (option === "2") {
         speakMessage(message.content);
       } else if (option === "3") {
-        if (confirm("Delete message?")) {
+        if (confirm("Delete this message?")) {
           session.messages.splice(index, 1);
           saveData();
           renderChat();
@@ -856,7 +861,7 @@ async function handleMessageAction(action, messageId) {
 }
 
 
-/* REGENERATE */
+/* REGENERATE LAST RESPONSE */
 
 async function regenerateLastResponse() {
   const session = currentChat();
@@ -887,41 +892,31 @@ if (chat) {
 
     if (!wrapper) return;
 
-    const index = Number(wrapper.dataset.index);
-    const session = currentChat();
+    const messageId = wrapper.dataset.messageId;
 
-    if (!session || !session.messages[index]) return;
-
-    const message = session.messages[index];
+    if (!messageId) return;
 
     handleMessageAction(
       button.dataset.action,
-      message.id
-    );
+      messageId
+    ).catch(error => {
+      console.error("Message action error:", error);
+      alert("Unable to complete this action.");
+    });
   });
 }
 
 
 /* STOP GENERATION */
 
-if (stopBtn) {
-  stopBtn.addEventListener("click", () => {
-    if (controller) {
-      controller.abort();
-      controller = null;
-    }
+stopBtn?.addEventListener("click", () => {
+  if (controller) {
+    controller.abort();
+    controller = null;
+  }
 
-    isGenerating = false;
-    hideLoading();
-  });
-}
-
-
-/* SEARCH */
-
-if (searchInput) {
-  searchInput.addEventListener("input", renderChatList);
-}
+  setLoading(false);
+});
 
 
 /* CLEANUP */
@@ -929,7 +924,7 @@ if (searchInput) {
 window.addEventListener("beforeunload", stopSpeaker);
 
 
-/* INITIALIZE */
+/* INITIALIZE APP */
 
 function initializeApp() {
   loadData();
@@ -947,7 +942,7 @@ function initializeApp() {
 }
 
 
-/* START */
+/* START APP */
 
 if (document.readyState === "loading") {
   document.addEventListener(
@@ -961,5 +956,6 @@ if (document.readyState === "loading") {
 
 
 /* =========================================
-   END OF VERSION 24 PART 4
+   END OF K-ULTRA AI VERSION 24
 ========================================= */
+     
