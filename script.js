@@ -750,7 +750,7 @@ if (currentChatId === chatId) {
   renderChatList();
 }
      
-    }
+    
 
     if (currentChatId === chatId) {
       renderChat();
