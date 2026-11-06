@@ -1,63 +1,139 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <meta name="theme-color" content="#080d25">
+  <meta name="description" content="K-ULTRA AI - Your intelligent multilingual AI assistant.">
+  <meta name="application-name" content="K-ULTRA AI">
+
   <title>K-ULTRA AI</title>
-  <link rel="stylesheet" href="style.css?v=20">
-  <script src="script.js?v=24" defer></script>
+
+  <link rel="stylesheet" href="style.css?v=25">
+
+  <script src="script.js?v=25" defer></script>
 </head>
+
 <body>
 
   <div class="app" id="app">
 
-    <header class="header">
-      <button id="sidebarToggle" type="button" aria-label="Toggle sidebar">☰</button>
+    <!-- HEADER -->
 
-      <div class="logo">K</div>
+    <header class="header">
+
+      <button
+        id="sidebarToggle"
+        type="button"
+        aria-label="Toggle sidebar"
+        title="Toggle sidebar"
+      >☰</button>
+
+      <div class="logo" aria-label="K-ULTRA AI Logo">K</div>
+
       <div class="brand">K-ULTRA AI</div>
 
       <div class="header-spacer"></div>
 
-      <button id="themeToggle" class="theme-toggle"
-        type="button" aria-label="Change theme">☀️</button>
+      <button
+        id="themeToggle"
+        class="theme-toggle"
+        type="button"
+        aria-label="Change theme"
+        title="Change theme"
+      >☀️</button>
+
     </header>
+
+
+    <!-- MAIN WORKSPACE -->
 
     <div class="workspace">
 
+      <!-- SIDEBAR -->
+
       <aside class="sidebar" id="sidebar">
-        <button id="newChatBtn" type="button">＋ New Chat</button>
+
+        <button
+          id="newChatBtn"
+          type="button"
+        >＋ New Chat</button>
 
         <input
           id="chatSearch"
           type="search"
           placeholder="Search chats..."
           autocomplete="off"
+          aria-label="Search conversations"
         >
 
         <h3>Recent Chats</h3>
+
         <div id="chatSessions"></div>
+
       </aside>
+
+
+      <!-- MAIN CHAT AREA -->
 
       <main class="main">
 
+        <!-- WELCOME SCREEN -->
+
         <section id="welcome">
+
+          <div class="welcome-logo">K</div>
+
           <h1>K-ULTRA AI</h1>
+
           <p>Your intelligent AI assistant</p>
+
         </section>
 
-        <div id="chat" aria-live="polite"></div>
+
+        <!-- CHAT MESSAGES -->
+
+        <div
+          id="chat"
+          aria-live="polite"
+          aria-relevant="additions"
+        ></div>
+
+
+        <!-- SUGGESTIONS -->
 
         <div id="suggestions">
-          <button type="button" data-prompt="Hello K-ULTRA AI!">👋 Say Hello</button>
-          <button type="button" data-prompt="Tell me about artificial intelligence">🤖 About AI</button>
-          <button type="button" data-prompt="Explain this in Telugu">తెలుగులో వివరించు</button>
+
+          <button
+            type="button"
+            data-prompt="Hello K-ULTRA AI!"
+          >👋 Say Hello</button>
+
+          <button
+            type="button"
+            data-prompt="Tell me about artificial intelligence"
+          >🤖 About AI</button>
+
+          <button
+            type="button"
+            data-prompt="Explain this in Telugu"
+          >తెలుగులో వివరించు</button>
+
         </div>
+
+
+        <!-- CHAT COMPOSER -->
 
         <form class="composer" id="chatForm">
 
+          <!-- FILE PREVIEW -->
+
           <div id="filePreview" hidden></div>
+
+
+          <!-- FILE INPUT -->
 
           <input
             id="fileInput"
@@ -66,25 +142,64 @@
             hidden
           >
 
+
+          <!-- MESSAGE INPUT -->
+
           <textarea
             id="userInput"
             placeholder="Message K-ULTRA AI..."
             rows="1"
+            aria-label="Type your message"
+            autocomplete="off"
           ></textarea>
 
+
+          <!-- COMPOSER BUTTONS -->
+
           <div class="composer-actions">
-            <button id="attachBtn" type="button" aria-label="Attach file">📎</button>
-            <button id="micBtn" type="button" aria-label="Voice input">🎤</button>
-            <button id="stopBtn" type="button" hidden>■ Stop</button>
-            <button id="sendBtn" type="submit">➤ Send</button>
+
+            <button
+              id="attachBtn"
+              type="button"
+              aria-label="Attach file"
+              title="Attach file"
+            >📎</button>
+
+            <button
+              id="micBtn"
+              type="button"
+              aria-label="Voice input"
+              title="Voice input"
+            >🎤</button>
+
+            <button
+              id="stopBtn"
+              type="button"
+              hidden
+              aria-label="Stop generating"
+            >■ Stop</button>
+
+            <button
+              id="sendBtn"
+              type="submit"
+              aria-label="Send message"
+            >➤ Send</button>
+
           </div>
 
         </form>
 
-        <p class="footer-note">K-ULTRA AI can make mistakes. Verify important information.</p>
+
+        <!-- FOOTER -->
+
+        <p class="footer-note">
+          K-ULTRA AI can make mistakes. Verify important information.
+        </p>
 
       </main>
+
     </div>
+
   </div>
 
 </body>
