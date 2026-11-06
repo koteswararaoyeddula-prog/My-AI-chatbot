@@ -1,11 +1,15 @@
+
 "use strict";
 
 /* =========================================
    K-ULTRA AI - VERSION 24
-   CORE SYSTEM
+   COMPLETE JAVASCRIPT
 ========================================= */
 
-const API_URL = "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
+const API_URL =
+  "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
+
+/* ELEMENTS */
 
 const $ = id => document.getElementById(id);
 
@@ -27,6 +31,8 @@ const micBtn = $("micBtn");
 const welcome = $("welcome");
 const suggestions = $("suggestions");
 
+/* STORAGE */
+
 const CHAT_KEY = "kUltraConversations";
 const CURRENT_KEY = "kUltraCurrentChatId";
 const THEME_KEY = "kUltraTheme";
@@ -36,11 +42,13 @@ let currentChatId = "";
 let controller = null;
 let isGenerating = false;
 let selectedFileText = "";
+let selectedImageURL = "";
 let recognition = null;
 let chatMenuElement = null;
 let imageViewer = null;
+let suppressChatClick = false;
 
-/* STORAGE */
+/* HELPERS */
 
 function storageGet(key, fallback = null) {
   try {
@@ -66,12 +74,17 @@ function saveData() {
   storageSet(CURRENT_KEY, currentChatId);
 }
 
+function createId() {
+  return Date.now().toString() +
+    Math.random().toString(16).slice(2);
+}
+
 function normalizeMessage(message) {
   return {
-    id: String(message?.id || (
-      Date.now().toString() + Math.random().toString(16).slice(2)
-    )),
-    role: message?.role === "user" ? "user" : "assistant",
+    id: String(message?.id || createId()),
+    role: message?.role === "user"
+      ? "user"
+      : "assistant",
     content: String(message?.content ?? ""),
     createdAt: Number(message?.createdAt || Date.now())
   };
@@ -80,9 +93,7 @@ function normalizeMessage(message) {
 function normalizeConversation(item) {
   return {
     ...item,
-    id: String(item?.id || (
-      Date.now().toString() + Math.random().toString(16).slice(2)
-    )),
+    id: String(item?.id || createId()),
     title: String(item?.title || "New Chat"),
     messages: Array.isArray(item?.messages)
       ? item.messages.map(normalizeMessage)
@@ -96,12 +107,16 @@ function normalizeConversation(item) {
 }
 
 function currentChat() {
-  return conversations.find(item => item.id === currentChatId);
+  return conversations.find(
+    item => item.id === currentChatId
+  );
 }
+
+/* CHAT CREATION */
 
 function createChat() {
   const item = {
-    id: Date.now().toString() + Math.random().toString(16).slice(2),
+    id: createId(),
     title: "New Chat",
     messages: [],
     pinned: false,
@@ -113,85 +128,134 @@ function createChat() {
 
   conversations.unshift(item);
   currentChatId = item.id;
+
   saveData();
   renderChat();
   renderChatList();
+
   input?.focus();
+
   return item;
 }
 
+/* LOAD HISTORY */
+
 function loadData() {
   try {
-    const data = JSON.parse(storageGet(CHAT_KEY, "[]"));
+    const data = JSON.parse(
+      storageGet(CHAT_KEY, "[]")
+    );
+
     conversations = Array.isArray(data)
       ? data.map(normalizeConversation)
       : [];
+
   } catch (error) {
-    console.error("History load error:", error);
+    console.error("History error:", error);
     conversations = [];
   }
 
   currentChatId = storageGet(CURRENT_KEY, "");
 
-  if (!conversations.some(item => item.id === currentChatId)) {
-    currentChatId = conversations[0]?.id || "";
+  if (!conversations.some(
+    item => item.id === currentChatId
+  )) {
+    currentChatId =
+      conversations.find(item => !item.archived)?.id || "";
   }
 
-  if (!currentChatId) createChat();
+  if (!currentChatId) {
+    createChat();
+  }
 }
 
 /* THEME */
 
 function applyTheme(theme) {
   const light = theme === "light";
-  document.body.classList.toggle("light-mode", light);
+
+  document.body.classList.toggle(
+    "light-mode",
+    light
+  );
 
   if (themeBtn) {
     themeBtn.textContent = light ? "🌙" : "☀️";
-    themeBtn.setAttribute(
-      "aria-label",
-      light ? "Switch to dark mode" : "Switch to light mode"
-    );
   }
 
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = light ? "#f4f6fc" : "#080d25";
+  const meta = document.querySelector(
+    'meta[name="theme-color"]'
+  );
 
-  storageSet(THEME_KEY, light ? "light" : "dark");
+  if (meta) {
+    meta.content = light
+      ? "#f4f6fc"
+      : "#080d25";
+  }
+
+  storageSet(
+    THEME_KEY,
+    light ? "light" : "dark"
+  );
 }
 
 function toggleTheme() {
   applyTheme(
-    document.body.classList.contains("light-mode") ? "dark" : "light"
+    document.body.classList.contains("light-mode")
+      ? "dark"
+      : "light"
   );
 }
 
-themeBtn?.addEventListener("click", toggleTheme);
+themeBtn?.addEventListener(
+  "click",
+  toggleTheme
+);
+
+/* LOADING */
 
 function setLoading(loading) {
   isGenerating = loading;
-  if (sendBtn) sendBtn.disabled = loading;
-  if (stopBtn) stopBtn.hidden = !loading;
+
+  if (sendBtn) {
+    sendBtn.disabled = loading;
+  }
+
+  if (stopBtn) {
+    stopBtn.hidden = !loading;
+  }
 }
 
-stopBtn?.addEventListener("click", () => {
-  if (controller) controller.abort();
-});
+/* STOP GENERATION */
 
-/* SIDEBAR AND NEW CHAT */
+function stopGeneration() {
+  if (controller) {
+    controller.abort();
+    controller = null;
+  }
+
+  setLoading(false);
+}
+
+stopBtn?.addEventListener(
+  "click",
+  stopGeneration
+);
+
+/* SIDEBAR */
 
 sidebarBtn?.addEventListener("click", () => {
   app?.classList.toggle("sidebar-collapsed");
 });
 
+/* NEW CHAT */
+
 newChatBtn?.addEventListener("click", () => {
-  if (controller) controller.abort();
-  controller = null;
-  setLoading(false);
+  stopGeneration();
+  stopSpeaker();
+  clearSelectedFile();
   createChat();
 });
-
-searchInput?.addEventListener("input", renderChatList);
 
 /* IMAGE VIEWER */
 
@@ -204,117 +268,206 @@ function openImageViewer(src, alt = "Image preview") {
   closeImageViewer();
 
   const overlay = document.createElement("div");
+
   overlay.style.cssText =
-    "position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.96);display:flex;align-items:center;justify-content:center;padding:16px;";
+    "position:fixed;inset:0;z-index:100000;" +
+    "background:rgba(0,0,0,.96);" +
+    "display:flex;align-items:center;" +
+    "justify-content:center;padding:16px;";
 
   const image = document.createElement("img");
+
   image.src = src;
   image.alt = alt;
+
   image.style.cssText =
-    "max-width:100%;max-height:88vh;object-fit:contain;border-radius:10px;";
+    "max-width:100%;max-height:88vh;" +
+    "object-fit:contain;border-radius:10px;";
 
   const close = document.createElement("button");
+
   close.type = "button";
   close.textContent = "✕";
+
   close.style.cssText =
-    "position:absolute;top:16px;right:16px;width:44px;height:44px;border:0;border-radius:50%;background:#292929;color:white;font-size:22px;";
-  close.addEventListener("click", closeImageViewer);
+    "position:absolute;top:16px;right:16px;" +
+    "width:44px;height:44px;border:0;" +
+    "border-radius:50%;background:#292929;" +
+    "color:white;font-size:22px;";
+
+  close.addEventListener(
+    "click",
+    closeImageViewer
+  );
 
   overlay.addEventListener("click", event => {
-    if (event.target === overlay) closeImageViewer();
+    if (event.target === overlay) {
+      closeImageViewer();
+    }
   });
 
   overlay.append(image, close);
   document.body.appendChild(overlay);
+
   imageViewer = overlay;
 }
 
 document.addEventListener("keydown", event => {
-  if (event.key === "Escape") closeImageViewer();
+  if (event.key === "Escape") {
+    closeImageViewer();
+    closeChatMenu();
+  }
 });
 
-/* END PART 1 */
 /* =========================================
-   K-ULTRA AI - VERSION 24
-   PART 2: MESSAGE RENDERING
+   PART 2 - MESSAGE RENDERING
 ========================================= */
 
 function createActionButton(label, action, title) {
   const button = document.createElement("button");
+
   button.type = "button";
   button.textContent = label;
   button.dataset.action = action;
   button.title = title;
   button.setAttribute("aria-label", title);
-  button.style.cssText = "border:1px solid var(--border,#343b60);background:transparent;color:inherit;padding:6px 9px;border-radius:8px;cursor:pointer;font-size:13px;margin:3px;";
+
+  button.style.cssText =
+    "border:1px solid var(--border,#343b60);" +
+    "background:transparent;color:inherit;" +
+    "padding:6px 9px;border-radius:8px;" +
+    "cursor:pointer;font-size:13px;margin:3px;";
+
   return button;
 }
+
+/* IMAGE DOWNLOAD */
 
 async function downloadImage(url) {
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error("Image download failed");
+
+    if (!response.ok) {
+      throw new Error("Image download failed");
+    }
+
     const blob = await response.blob();
     const objectURL = URL.createObjectURL(blob);
+
     const link = document.createElement("a");
+
     link.href = objectURL;
     link.download = "k-ultra-ai-image.png";
+
     document.body.appendChild(link);
     link.click();
     link.remove();
-    setTimeout(() => URL.revokeObjectURL(objectURL), 2000);
+
+    setTimeout(
+      () => URL.revokeObjectURL(objectURL),
+      2000
+    );
+
   } catch (error) {
     console.error(error);
-    window.open(url, "_blank", "noopener");
+
+    window.open(
+      url,
+      "_blank",
+      "noopener"
+    );
   }
 }
 
+/* IMAGE CARD */
+
 function addImageCard(parent, src, alt) {
   const card = document.createElement("div");
-  card.style.cssText = "margin-top:10px;max-width:100%;";
+
+  card.style.cssText =
+    "margin-top:10px;max-width:100%;";
 
   const image = document.createElement("img");
+
   image.src = src;
   image.alt = alt || "AI image";
   image.loading = "lazy";
-  image.style.cssText = "display:block;max-width:100%;max-height:420px;width:auto;height:auto;object-fit:contain;border-radius:12px;cursor:zoom-in;";
-  image.addEventListener("click", () => openImageViewer(src, alt));
+
+  image.style.cssText =
+    "display:block;max-width:100%;" +
+    "max-height:420px;width:auto;height:auto;" +
+    "object-fit:contain;border-radius:12px;" +
+    "cursor:zoom-in;";
+
+  image.addEventListener("click", () => {
+    openImageViewer(src, alt);
+  });
 
   const download = document.createElement("button");
+
   download.type = "button";
   download.textContent = "⬇️ Download Image";
-  download.style.cssText = "margin-top:8px;padding:8px 13px;border:0;border-radius:8px;background:#7138ff;color:white;cursor:pointer;";
-  download.addEventListener("click", () => downloadImage(src));
+
+  download.style.cssText =
+    "margin-top:8px;padding:8px 13px;" +
+    "border:0;border-radius:8px;" +
+    "background:#7138ff;color:white;cursor:pointer;";
+
+  download.addEventListener("click", () => {
+    downloadImage(src);
+  });
 
   card.append(image, download);
   parent.appendChild(card);
 }
 
+/* RENDER CONTENT */
+
 function renderContent(container, content) {
   const text = String(content || "");
-  const pattern = /!\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^)]+)\)/g;
+
+  const pattern =
+    /!\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^)]+)\)/g;
 
   let lastIndex = 0;
   let match;
 
   while ((match = pattern.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      container.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+      container.appendChild(
+        document.createTextNode(
+          text.slice(lastIndex, match.index)
+        )
+      );
     }
-    addImageCard(container, match[2], match[1]);
+
+    addImageCard(
+      container,
+      match[2],
+      match[1]
+    );
+
     lastIndex = pattern.lastIndex;
   }
 
   if (lastIndex < text.length) {
-    container.appendChild(document.createTextNode(text.slice(lastIndex)));
+    container.appendChild(
+      document.createTextNode(
+        text.slice(lastIndex)
+      )
+    );
   }
 
   if (lastIndex === 0) {
-    const directPattern = /(^|\n)(https?:\/\/[^\s]+\.(?:png|jpe?g|gif|webp)(?:\?[^\s]*)?)/gi;
+    const directPattern =
+      /(^|\n)(https?:\/\/[^\s]+\.(?:png|jpe?g|gif|webp)(?:\?[^\s]*)?)/gi;
+
     const found = [];
     let directMatch;
 
-    while ((directMatch = directPattern.exec(text)) !== null) {
+    while (
+      (directMatch = directPattern.exec(text)) !== null
+    ) {
       found.push({
         start: directMatch.index,
         url: directMatch[2],
@@ -324,18 +477,33 @@ function renderContent(container, content) {
 
     if (found.length) {
       container.replaceChildren();
+
       let position = 0;
 
       found.forEach(item => {
         if (item.start > position) {
-          container.appendChild(document.createTextNode(text.slice(position, item.start)));
+          container.appendChild(
+            document.createTextNode(
+              text.slice(position, item.start)
+            )
+          );
         }
-        addImageCard(container, item.url, "AI image");
+
+        addImageCard(
+          container,
+          item.url,
+          "AI image"
+        );
+
         position = item.end;
       });
 
       if (position < text.length) {
-        container.appendChild(document.createTextNode(text.slice(position)));
+        container.appendChild(
+          document.createTextNode(
+            text.slice(position)
+          )
+        );
       }
     }
   }
@@ -344,51 +512,101 @@ function renderContent(container, content) {
   container.style.overflowWrap = "anywhere";
 }
 
+/* MESSAGE ACTION BUTTONS */
+
 function createMessageActions(message) {
   const actions = document.createElement("div");
-  actions.className = "message-actions";
-  actions.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;";
 
-  actions.appendChild(createActionButton("📋 Copy", "copy", "Copy message"));
-  actions.appendChild(createActionButton("🔊 Speaker", "speak", "Listen to message"));
-  actions.appendChild(createActionButton("⋯ More", "more", "More options"));
+  actions.className = "message-actions";
+
+  actions.style.cssText =
+    "display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;";
+
+  actions.appendChild(
+    createActionButton("📋 Copy", "copy", "Copy message")
+  );
+
+  actions.appendChild(
+    createActionButton("🔊 Speaker", "speak", "Listen to message")
+  );
+
+  actions.appendChild(
+    createActionButton("⋯ More", "more", "More options")
+  );
 
   if (message.role === "user") {
-    actions.appendChild(createActionButton("✏️ Edit", "edit", "Edit message"));
+    actions.appendChild(
+      createActionButton("✏️ Edit", "edit", "Edit message")
+    );
   } else {
-    actions.appendChild(createActionButton("🔄 Regenerate", "regenerate", "Regenerate response"));
+    actions.appendChild(
+      createActionButton(
+        "🔄 Regenerate",
+        "regenerate",
+        "Regenerate response"
+      )
+    );
   }
 
-  actions.appendChild(createActionButton("🗑️ Delete", "delete", "Delete message"));
+  actions.appendChild(
+    createActionButton("🗑️ Delete", "delete", "Delete message")
+  );
+
   return actions;
 }
 
+/* CREATE MESSAGE */
+
 function addMessageElement(message, index) {
   const wrapper = document.createElement("div");
-  wrapper.className = "message " + (message.role === "user" ? "user-message" : "assistant-message");
+
+  wrapper.className =
+    "message " +
+    (message.role === "user"
+      ? "user-message"
+      : "assistant-message");
+
   wrapper.dataset.messageId = message.id;
   wrapper.dataset.index = String(index);
   wrapper.dataset.role = message.role;
 
   const bubble = document.createElement("div");
+
   bubble.className = "message-bubble";
-  renderContent(bubble, message.content);
+
+  renderContent(
+    bubble,
+    message.content
+  );
 
   wrapper.appendChild(bubble);
-  wrapper.appendChild(createMessageActions(message));
+
+  wrapper.appendChild(
+    createMessageActions(message)
+  );
+
   chat.appendChild(wrapper);
 
   return wrapper;
 }
 
+/* RENDER CHAT */
+
 function renderChat() {
   if (!chat) return;
 
   chat.replaceChildren();
-  const messages = currentChat()?.messages || [];
 
-  if (welcome) welcome.hidden = messages.length > 0;
-  if (suggestions) suggestions.hidden = messages.length > 0;
+  const messages =
+    currentChat()?.messages || [];
+
+  if (welcome) {
+    welcome.hidden = messages.length > 0;
+  }
+
+  if (suggestions) {
+    suggestions.hidden = messages.length > 0;
+  }
 
   messages.forEach((message, index) => {
     addMessageElement(message, index);
@@ -397,30 +615,46 @@ function renderChat() {
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* END PART 2 */
 /* =========================================
-   K-ULTRA AI - VERSION 24
-   PART 3: CHAT HISTORY & MENU
+   PART 3 - CHAT HISTORY & MENU
 ========================================= */
-
-let suppressChatClick = false;
 
 function closeChatMenu() {
   chatMenuElement?.remove();
-  
+  chatMenuElement = null;
 }
 
+/* PASSCODE HASH */
+
 async function hashChatPasscode(passcode) {
+  if (!crypto?.subtle) {
+    throw new Error(
+      "Secure passcode feature is not supported."
+    );
+  }
+
   const data = new TextEncoder().encode(passcode);
-  const hash = await crypto.subtle.digest("SHA-256", data);
+
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    data
+  );
 
   return Array.from(new Uint8Array(hash))
     .map(byte => byte.toString(16).padStart(2, "0"))
     .join("");
 }
 
-function addChatMenuOption(menu, label, callback, danger = false) {
+/* MENU OPTION */
+
+function addChatMenuOption(
+  menu,
+  label,
+  callback,
+  danger = false
+) {
   const button = document.createElement("button");
+
   button.type = "button";
   button.textContent = label;
 
@@ -451,10 +685,13 @@ function addChatMenuOption(menu, label, callback, danger = false) {
   menu.appendChild(button);
 }
 
+/* SHOW CHAT MENU */
+
 function showChatMenu(item) {
   closeChatMenu();
 
   const overlay = document.createElement("div");
+
   overlay.style.cssText = `
     position:fixed;
     inset:0;
@@ -467,6 +704,7 @@ function showChatMenu(item) {
   `;
 
   const menu = document.createElement("div");
+
   menu.style.cssText = `
     width:min(400px,100%);
     max-height:80vh;
@@ -478,6 +716,8 @@ function showChatMenu(item) {
     box-shadow:0 10px 40px rgba(0,0,0,.25);
   `;
 
+  /* PIN */
+
   addChatMenuOption(
     menu,
     item.pinned ? "📌 Unpin" : "📌 Pin",
@@ -488,45 +728,87 @@ function showChatMenu(item) {
     }
   );
 
-  addChatMenuOption(menu, "✏️ Rename", () => {
-    const name = prompt("Enter new chat name:", item.title);
+  /* RENAME */
 
-    if (name?.trim()) {
-      item.title = name.trim().slice(0, 70);
+  addChatMenuOption(
+    menu,
+    "✏️ Rename",
+    () => {
+      const name = prompt(
+        "Enter new chat name:",
+        item.title
+      );
+
+      if (name?.trim()) {
+        item.title = name.trim().slice(0, 70);
+        saveData();
+        renderChatList();
+      }
+    }
+  );
+
+  /* PROJECT */
+
+  addChatMenuOption(
+    menu,
+    "📁 Add to project",
+    () => {
+      const project = prompt(
+        "Enter project name:",
+        item.project || ""
+      );
+
+      if (project === null) return;
+
+      item.project = project.trim();
+
       saveData();
       renderChatList();
     }
-  });
+  );
 
-  addChatMenuOption(menu, "📁 Add to project", () => {
-    const project = prompt("Enter project name:", item.project || "");
-
-    if (project === null) return;
-
-    item.project = project.trim();
-    saveData();
-    renderChatList();
-  });
+  /* ARCHIVE */
 
   addChatMenuOption(
     menu,
     item.archived ? "📤 Unarchive" : "🗃️ Archive",
     () => {
       item.archived = !item.archived;
-      saveData();
-      renderChatList();
+
+      if (item.id === currentChatId && item.archived) {
+        const next = conversations.find(
+          c => !c.archived && c.id !== item.id
+        );
+
+        currentChatId = next?.id || "";
+      }
+
+      if (!currentChatId) {
+        createChat();
+      } else {
+        saveData();
+        renderChat();
+        renderChatList();
+      }
     }
   );
+
+  /* LOCK */
 
   addChatMenuOption(
     menu,
     item.lockHash ? "🔓 Unlock chat" : "🔒 Lock chat",
     async () => {
       if (item.lockHash) {
-        const oldPasscode = prompt("Enter current passcode:");
+        const oldPasscode = prompt(
+          "Enter current passcode:"
+        );
+
         if (oldPasscode === null) return;
 
-        const oldHash = await hashChatPasscode(oldPasscode);
+        const oldHash = await hashChatPasscode(
+          oldPasscode
+        );
 
         if (oldHash !== item.lockHash) {
           alert("Incorrect passcode!");
@@ -534,13 +816,18 @@ function showChatMenu(item) {
         }
 
         item.lockHash = "";
+
         saveData();
         renderChatList();
+
         alert("Chat unlocked.");
         return;
       }
 
-      const passcode = prompt("Create passcode (at least 4 characters):");
+      const passcode = prompt(
+        "Create passcode (at least 4 characters):"
+      );
+
       if (passcode === null) return;
 
       if (passcode.length < 4) {
@@ -548,84 +835,119 @@ function showChatMenu(item) {
         return;
       }
 
-      const confirmation = prompt("Confirm passcode:");
+      const confirmation = prompt(
+        "Confirm passcode:"
+      );
 
       if (confirmation !== passcode) {
         alert("Passcodes do not match.");
         return;
       }
 
-      item.lockHash = await hashChatPasscode(passcode);
+      item.lockHash = await hashChatPasscode(
+        passcode
+      );
+
       saveData();
       renderChatList();
+
       alert("Chat locked.");
     }
   );
 
-  addChatMenuOption(menu, "🗑️ Delete", () => {
-    if (!confirm("Delete this conversation permanently?")) return;
+  /* DELETE CHAT */
 
-    conversations = conversations.filter(
-      conversation => conversation.id !== item.id
-    );
+  addChatMenuOption(
+    menu,
+    "🗑️ Delete",
+    () => {
+      if (!confirm(
+        "Delete this conversation permanently?"
+      )) return;
 
-    if (currentChatId === item.id) {
-      currentChatId = "";
-      const nextChat = conversations.find(chat => !chat.archived);
+      conversations = conversations.filter(
+        c => c.id !== item.id
+      );
 
-      if (nextChat) {
-        currentChatId = nextChat.id;
-      } else {
-        createChat();
+      if (currentChatId === item.id) {
+        currentChatId = "";
+      }
+
+      if (!currentChat()) {
+        const next = conversations.find(
+          c => !c.archived
+        );
+
+        if (next) {
+          currentChatId = next.id;
+          saveData();
+          renderChat();
+          renderChatList();
+        } else {
+          createChat();
+        }
+
         return;
       }
-    }
 
-    saveData();
-    renderChat();
-    renderChatList();
-  }, true);
+      saveData();
+      renderChat();
+      renderChatList();
+    },
+    true
+  );
 
   overlay.appendChild(menu);
 
   overlay.addEventListener("click", event => {
-    if (event.target === overlay) closeChatMenu();
+    if (event.target === overlay) {
+      closeChatMenu();
+    }
   });
 
   document.body.appendChild(overlay);
+
   chatMenuElement = overlay;
 }
 
-function openChatItem(item) {
+/* OPEN CHAT */
+
+async function openChatItem(item) {
   if (item.lockHash) {
-    const passcode = prompt("Enter chat passcode:");
+    const passcode = prompt(
+      "Enter chat passcode:"
+    );
+
     if (passcode === null) return;
 
-    hashChatPasscode(passcode).then(hash => {
+    try {
+      const hash = await hashChatPasscode(passcode);
+
       if (hash !== item.lockHash) {
         alert("Incorrect passcode!");
         return;
       }
-
-      currentChatId = item.id;
-      saveData();
-      renderChat();
-      renderChatList();
-    }).catch(error => alert(error.message));
-
-    return;
+    } catch (error) {
+      alert(error.message);
+      return;
+    }
   }
 
   currentChatId = item.id;
+
   saveData();
   renderChat();
   renderChatList();
 }
 
+/* LONG PRESS */
+
 function attachLongPress(element, item) {
   let timer = null;
 
   const start = () => {
+    clearTimeout(timer);
+
     timer = setTimeout(() => {
       suppressChatClick = true;
       showChatMenu(item);
@@ -633,23 +955,28 @@ function attachLongPress(element, item) {
       setTimeout(() => {
         suppressChatClick = false;
       }, 700);
+
     }, 550);
   };
 
   const cancel = () => {
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
+    clearTimeout(timer);
+    timer = null;
   };
 
-  element.addEventListener("touchstart", start, { passive: true });
+  element.addEventListener(
+    "touchstart",
+    start,
+    { passive: true }
+  );
+
   element.addEventListener("touchend", cancel);
   element.addEventListener("touchmove", cancel);
   element.addEventListener("touchcancel", cancel);
 
   element.addEventListener("contextmenu", event => {
     event.preventDefault();
+
     suppressChatClick = true;
     showChatMenu(item);
 
@@ -663,23 +990,35 @@ function attachLongPress(element, item) {
   element.addEventListener("mouseleave", cancel);
 }
 
+/* CHAT LIST */
+
 function renderChatList() {
   if (!chatSessions) return;
 
   chatSessions.replaceChildren();
 
-  const query = searchInput?.value.trim().toLowerCase() || "";
+  const query =
+    searchInput?.value.trim().toLowerCase() || "";
 
   const sortedChats = [...conversations]
     .filter(item => !item.archived)
-    .filter(item => item.title.toLowerCase().includes(query))
+    .filter(item =>
+      item.title.toLowerCase().includes(query)
+    )
     .sort((a, b) => {
-      if (a.pinned !== b.pinned) return Number(b.pinned) - Number(a.pinned);
-      return (b.updatedAt || 0) - (a.updatedAt || 0);
+      if (a.pinned !== b.pinned) {
+        return Number(b.pinned) - Number(a.pinned);
+      }
+
+      return (
+        (b.updatedAt || 0) -
+        (a.updatedAt || 0)
+      );
     });
 
   sortedChats.forEach(item => {
     const row = document.createElement("div");
+
     row.className = "chat-list-item";
     row.dataset.chatId = item.id;
 
@@ -687,13 +1026,16 @@ function renderChatList() {
       row.classList.add("active");
     }
 
-    if (item.pinned) row.classList.add("pinned");
+    if (item.pinned) {
+      row.classList.add("pinned");
+    }
 
     const title = document.createElement("span");
-    title.className = "chat-list-title";
+     title.className = "chat-list-title";
     title.textContent = item.title || "New Chat";
 
     const more = document.createElement("button");
+
     more.type = "button";
     more.className = "chat-more-button";
     more.textContent = "⋯";
@@ -716,37 +1058,54 @@ function renderChatList() {
     });
 
     attachLongPress(row, item);
+
     chatSessions.appendChild(row);
   });
 }
 
-/* END PART 3 */
+/* SEARCH */
 
-  
+searchInput?.addEventListener(
+  "input",
+  renderChatList
+);
 
 /* =========================================
-   K-ULTRA AI - VERSION 24
-   PART 4: MESSAGE ACTIONS & INITIALIZATION
+   PART 4 - MESSAGE ACTIONS
 ========================================= */
 
-
-/* COPY MESSAGE */
+/* COPY */
 
 async function copyMessage(message) {
   try {
-    await navigator.clipboard.writeText(message);
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(message);
+    } else {
+      throw new Error("Clipboard unavailable");
+    }
+
     alert("Message copied!");
+
   } catch (error) {
     const area = document.createElement("textarea");
+
     area.value = message;
+
     document.body.appendChild(area);
+
     area.select();
-    document.execCommand("copy");
+
+    const copied = document.execCommand("copy");
+
     area.remove();
-    alert("Message copied!");
+
+    alert(
+      copied
+        ? "Message copied!"
+        : "Unable to copy message."
+    );
   }
 }
-
 
 /* SPEAKER */
 
@@ -756,17 +1115,19 @@ function speakMessage(message) {
     return;
   }
 
-  speechSynthesis.cancel();
+  stopSpeaker();
 
-  const speech = new SpeechSynthesisUtterance(message);
+  const speech = new SpeechSynthesisUtterance(
+    String(message)
+  );
 
-  speech.lang = /[\u0C00-\u0C7F]/.test(message)
-    ? "te-IN"
-    : "en-IN";
+  speech.lang =
+    /[\u0C00-\u0C7F]/.test(message)
+      ? "te-IN"
+      : "en-IN";
 
   speechSynthesis.speak(speech);
 }
-
 
 /* STOP SPEAKER */
 
@@ -776,6 +1137,76 @@ function stopSpeaker() {
   }
 }
 
+/* REGENERATE */
+
+async function regenerateLastResponse() {
+  const session = currentChat();
+
+  if (!session || isGenerating) return;
+
+  let lastUserIndex = -1;
+
+  for (
+    let i = session.messages.length - 1;
+    i >= 0;
+    i--
+  ) {
+    if (session.messages[i].role === "user") {
+      lastUserIndex = i;
+      break;
+    }
+  }
+   if (lastUserIndex === -1) return;
+
+  const lastUser = session.messages[lastUserIndex];
+
+  session.messages = session.messages.slice(
+    0,
+    lastUserIndex + 1
+  );
+
+  saveData();
+  renderChat();
+
+  await sendMessage(lastUser.content, {
+    regenerate: true
+  });
+}
+
+/* EDIT MESSAGE */
+
+async function editMessage(messageId) {
+  const session = currentChat();
+
+  if (!session) return;
+
+  const index = session.messages.findIndex(
+    item => item.id === messageId
+  );
+
+  if (index === -1) return;
+
+  const message = session.messages[index];
+
+  if (message.role !== "user") return;
+
+  const edited = prompt(
+    "Edit message:",
+    message.content
+  );
+
+  if (!edited?.trim()) return;
+
+  session.messages = session.messages.slice(
+    0,
+    index
+  );
+
+  saveData();
+  renderChat();
+
+  await sendMessage(edited.trim());
+}
 
 /* MESSAGE ACTION HANDLER */
 
@@ -787,8 +1218,7 @@ async function handleMessageAction(action, messageId) {
   const index = session.messages.findIndex(
     item => item.id === messageId
   );
-
-  if (index === -1) return;
+   if (index === -1) return;
 
   const message = session.messages[index];
 
@@ -802,160 +1232,222 @@ async function handleMessageAction(action, messageId) {
       speakMessage(message.content);
       break;
 
-    case "stop-speech":
-      stopSpeaker();
-      break;
-
     case "delete":
       if (!confirm("Delete this message?")) return;
 
       session.messages.splice(index, 1);
+
+      session.updatedAt = Date.now();
+
       saveData();
       renderChat();
-      break;
-
-    case "regenerate":
-      if (message.role === "assistant") {
-        await regenerateLastResponse();
-      }
+      renderChatList();
       break;
 
     case "edit":
-      if (message.role !== "user") return;
-
-      const edited = prompt(
-        "Edit your message:",
-        message.content
-      );
-
-      if (edited === null || !edited.trim()) return;
-
-      session.messages = session.messages.slice(0, index);
-
-      saveData();
-      renderChat();
-
-      await sendMessage(edited.trim());
+      await editMessage(messageId);
       break;
 
-    case "more":
+    case "regenerate":
+      await regenerateLastResponse();
+      break;
+
+    case "more": {
       const option = prompt(
-        "1. Copy\n2. Speaker\n3. Delete\n4. Stop Speaker"
+        "1. Copy\n" +
+        "2. Speaker\n" +
+        "3. Delete\n" +
+        "4. Stop Speaker"
       );
 
       if (option === "1") {
         await copyMessage(message.content);
+
       } else if (option === "2") {
         speakMessage(message.content);
+
       } else if (option === "3") {
-        if (confirm("Delete this message?")) {
+        if (confirm("Delete message?")) {
           session.messages.splice(index, 1);
+
           saveData();
           renderChat();
+          renderChatList();
         }
+
       } else if (option === "4") {
         stopSpeaker();
       }
+
       break;
+    }
   }
 }
-
-
-/* REGENERATE LAST RESPONSE */
-
-async function regenerateLastResponse() {
-  const session = currentChat();
-
-  if (!session || isGenerating) return;
-
-  const lastUser = [...session.messages]
-    .reverse()
-    .find(item => item.role === "user");
-
-  if (!lastUser) return;
-
-  await sendMessage(lastUser.content, {
-    regenerate: true
-  });
-}
-
 
 /* MESSAGE BUTTON EVENTS */
+chat?.addEventListener("click", event => {
+  const button = event.target.closest(
+    "[data-action]"
+  );
 
-if (chat) {
-  chat.addEventListener("click", event => {
-    const button = event.target.closest("[data-action]");
+  if (!button) return;
 
-    if (!button) return;
+  const wrapper = button.closest(".message");
 
-    const wrapper = button.closest(".message");
+  if (!wrapper) return;
 
-    if (!wrapper) return;
+  const messageId = wrapper.dataset.messageId;
 
-    const messageId = wrapper.dataset.messageId;
+  if (!messageId) return;
 
-    if (!messageId) return;
-
-    handleMessageAction(
-      button.dataset.action,
-      messageId
-    ).catch(error => {
-      console.error("Message action error:", error);
-      alert("Unable to complete this action.");
-    });
+  handleMessageAction(
+    button.dataset.action,
+    messageId
+  ).catch(error => {
+    console.error("Message action error:", error);
+    alert("Unable to complete this action.");
   });
-}
-
-
-/* STOP GENERATION */
-
-stopBtn?.addEventListener("click", () => {
-  if (controller) {
-    controller.abort();
-    controller = null;
-  }
-
-  setLoading(false);
 });
 
+/* =========================================
+   PART 5 - AI CONNECTION
+========================================= */
 
-/* CLEANUP */
+/* ADD MESSAGE TO HISTORY */
 
-window.addEventListener("beforeunload", stopSpeaker);
+function addMessage(role, content) {
+  const session = currentChat();
 
+  if (!session) return null;
 
-/* INITIALIZE APP */
+  const message = {
+    id: createId(),
+    role,
+    content: String(content),
+    createdAt: Date.now()
+  };
 
-function initializeApp() {
-  loadData();
+  session.messages.push(message);
+  session.updatedAt = Date.now();
 
-  if (!currentChat()) {
-    createChat();
+  if (
+    session.title === "New Chat" &&
+    role === "user"
+  ) {
+    session.title = content
+      .trim()
+      .slice(0, 35) || "New Chat";
   }
 
-  applyTheme(storageGet(THEME_KEY, "dark"));
-
+  saveData();
   renderChat();
   renderChatList();
 
-  console.log("K-ULTRA AI VERSION 24 READY");
+  return message;
 }
 
+/* SEND MESSAGE */
 
-/* START APP */
+async function sendMessage(
+  text,
+  options = {}
+) {
+  if (isGenerating) return;
 
-if (document.readyState === "loading") {
-  document.addEventListener(
-    "DOMContentLoaded",
-    initializeApp,
-    { once: true }
-  );
-} else {
-  initializeApp();
+  const message = String(text || "").trim();
+
+  if (!message) return;
+
+  let session = currentChat();
+
+  if (!session) {
+    session = createChat();
+  }
+
+  if (!options.regenerate) {
+    addMessage("user", message);
+  }
+
+  const history = session.messages.map(item => ({
+    role: item.role,
+    content: item.content
+  }));
+
+  controller = new AbortController();
+
+  setLoading(true);
+
+  const loading = document.createElement("div");
+
+  loading.className = "message assistant-message";
+  loading.textContent = "K-ULTRA AI is thinking...";
+
+  chat?.appendChild(loading);
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        message,
+        history
+      }),
+
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        "Server error: " + response.status
+      );
+    }
+     const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    const reply =
+      data.reply ||
+      data.response ||
+      data.result ||
+      "";
+
+    if (!reply) {
+      throw new Error(
+        "No reply received from K-ULTRA AI."
+      );
+    }
+
+    loading.remove();
+
+    addMessage("assistant", reply);
+
+  } catch (error) {
+    loading.remove();
+
+    if (error.name === "AbortError") {
+      addMessage(
+        "assistant",
+        "Generation stopped."
+      );
+    } else {
+      console.error("AI error:", error);
+
+      addMessage(
+        "assistant",
+        "Sorry, something went wrong.\n\n" +
+        error.message
+      );
+    }
+
+  } finally {
+    controller = null;
+    setLoading(false);
+    input?.focus();
+  }
 }
-
-
-/* =========================================
-   END OF K-ULTRA AI VERSION 24
-========================================= */
-     
