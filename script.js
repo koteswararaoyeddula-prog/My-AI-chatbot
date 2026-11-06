@@ -430,7 +430,7 @@ function renderContent(container, content) {
 
   // Recognize Markdown image links.
   const imagePattern =
-    /!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
+  /!\[([^\]]*)\]\((https?:\/\/[^)\s]+|data:image\/(?:png|jpeg|jpg|webp);base64,[^)]+)\)/g;
 
   let lastIndex = 0;
   let match;
