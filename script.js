@@ -721,3 +721,245 @@ function renderChatList() {
 }
 
 /* END PART 3 */
+
+/* =========================================
+   K-ULTRA AI - VERSION 24
+   PART 4: MESSAGE ACTIONS & INITIALIZATION
+========================================= */
+
+
+/* COPY MESSAGE */
+
+async function copyMessage(message) {
+  try {
+    await navigator.clipboard.writeText(message);
+    alert("Message copied!");
+  } catch (error) {
+    const area = document.createElement("textarea");
+    area.value = message;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+    alert("Message copied!");
+  }
+}
+
+
+/* SPEAKER */
+
+function speakMessage(message) {
+  if (!("speechSynthesis" in window)) {
+    alert("Speaker not supported.");
+    return;
+  }
+
+  speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(message);
+
+  speech.lang = /[\u0C00-\u0C7F]/.test(message)
+    ? "te-IN"
+    : "en-IN";
+
+  speechSynthesis.speak(speech);
+}
+
+
+/* STOP SPEAKER */
+
+function stopSpeaker() {
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+  }
+}
+
+
+/* MESSAGE ACTIONS */
+
+async function handleMessageAction(action, messageId) {
+  const session = currentChat();
+
+  if (!session) return;
+
+  const index = session.messages.findIndex(
+    item => item.id === messageId
+  );
+
+  if (index === -1) return;
+
+  const message = session.messages[index];
+
+  switch (action) {
+
+    case "copy":
+      await copyMessage(message.content);
+      break;
+
+    case "speak":
+      speakMessage(message.content);
+      break;
+
+    case "stop-speech":
+      stopSpeaker();
+      break;
+
+    case "delete":
+      if (!confirm("Delete this message?")) return;
+
+      session.messages.splice(index, 1);
+      saveData();
+      renderChat();
+      break;
+
+    case "regenerate":
+      await regenerateLastResponse();
+      break;
+
+    case "edit":
+      if (message.role !== "user") return;
+
+      const edited = prompt(
+        "Edit message:",
+        message.content
+      );
+
+      if (!edited?.trim()) return;
+
+      session.messages = session.messages.slice(0, index);
+      saveData();
+      renderChat();
+
+      sendMessage(edited.trim());
+      break;
+
+    case "more":
+      const option = prompt(
+        "1. Copy\n2. Speaker\n3. Delete\n4. Stop Speaker"
+      );
+
+      if (option === "1") {
+        await copyMessage(message.content);
+      } else if (option === "2") {
+        speakMessage(message.content);
+      } else if (option === "3") {
+        if (confirm("Delete message?")) {
+          session.messages.splice(index, 1);
+          saveData();
+          renderChat();
+        }
+      } else if (option === "4") {
+        stopSpeaker();
+      }
+      break;
+  }
+}
+
+
+/* REGENERATE */
+
+async function regenerateLastResponse() {
+  const session = currentChat();
+
+  if (!session || isGenerating) return;
+
+  const lastUser = [...session.messages]
+    .reverse()
+    .find(item => item.role === "user");
+
+  if (!lastUser) return;
+
+  await sendMessage(lastUser.content, {
+    regenerate: true
+  });
+}
+
+
+/* MESSAGE BUTTON EVENTS */
+
+if (chat) {
+  chat.addEventListener("click", event => {
+    const button = event.target.closest("[data-action]");
+
+    if (!button) return;
+
+    const wrapper = button.closest(".message");
+
+    if (!wrapper) return;
+
+    const index = Number(wrapper.dataset.index);
+    const session = currentChat();
+
+    if (!session || !session.messages[index]) return;
+
+    const message = session.messages[index];
+
+    handleMessageAction(
+      button.dataset.action,
+      message.id
+    );
+  });
+}
+
+
+/* STOP GENERATION */
+
+if (stopBtn) {
+  stopBtn.addEventListener("click", () => {
+    if (controller) {
+      controller.abort();
+      controller = null;
+    }
+
+    isGenerating = false;
+    hideLoading();
+  });
+}
+
+
+/* SEARCH */
+
+if (searchInput) {
+  searchInput.addEventListener("input", renderChatList);
+}
+
+
+/* CLEANUP */
+
+window.addEventListener("beforeunload", stopSpeaker);
+
+
+/* INITIALIZE */
+
+function initializeApp() {
+  loadData();
+
+  if (!currentChat()) {
+    createChat();
+  }
+
+  applyTheme(storageGet(THEME_KEY, "dark"));
+
+  renderChat();
+  renderChatList();
+
+  console.log("K-ULTRA AI VERSION 24 READY");
+}
+
+
+/* START */
+
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    initializeApp,
+    { once: true }
+  );
+} else {
+  initializeApp();
+}
+
+
+/* =========================================
+   END OF VERSION 24 PART 4
+========================================= */
