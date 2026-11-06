@@ -1,15 +1,16 @@
 
 "use strict";
 
-/* =========================================
-   K-ULTRA AI - VERSION 24
-   COMPLETE JAVASCRIPT
-========================================= */
+/* =====================================================
+   K-ULTRA AI - VERSION 25
+   COMPLETE FRONTEND JAVASCRIPT
+   Compatible with current index.html and style.css
+===================================================== */
 
 const API_URL =
   "https://k-ultra-ai-backend.yeddulakoteswararao.workers.dev";
 
-/* ELEMENTS */
+/* ---------------- ELEMENTS ---------------- */
 
 const $ = id => document.getElementById(id);
 
@@ -31,7 +32,7 @@ const micBtn = $("micBtn");
 const welcome = $("welcome");
 const suggestions = $("suggestions");
 
-/* STORAGE */
+/* ---------------- STORAGE ---------------- */
 
 const CHAT_KEY = "kUltraConversations";
 const CURRENT_KEY = "kUltraCurrentChatId";
@@ -42,19 +43,25 @@ let currentChatId = "";
 let controller = null;
 let isGenerating = false;
 let selectedFileText = "";
-let selectedImageURL = "";
+let selectedFileName = "";
 let recognition = null;
+let isListening = false;
 let chatMenuElement = null;
 let imageViewer = null;
 let suppressChatClick = false;
 
-/* HELPERS */
+/* ---------------- HELPERS ---------------- */
+
+function createId() {
+  return Date.now().toString(36) +
+    Math.random().toString(36).slice(2);
+}
 
 function storageGet(key, fallback = null) {
   try {
     return localStorage.getItem(key) ?? fallback;
   } catch (error) {
-    console.error(error);
+    console.error("Storage read error:", error);
     return fallback;
   }
 }
@@ -64,7 +71,7 @@ function storageSet(key, value) {
     localStorage.setItem(key, value);
     return true;
   } catch (error) {
-    console.error(error);
+    console.error("Storage write error:", error);
     return false;
   }
 }
@@ -74,17 +81,10 @@ function saveData() {
   storageSet(CURRENT_KEY, currentChatId);
 }
 
-function createId() {
-  return Date.now().toString() +
-    Math.random().toString(16).slice(2);
-}
-
 function normalizeMessage(message) {
   return {
     id: String(message?.id || createId()),
-    role: message?.role === "user"
-      ? "user"
-      : "assistant",
+    role: message?.role === "user" ? "user" : "assistant",
     content: String(message?.content ?? ""),
     createdAt: Number(message?.createdAt || Date.now())
   };
@@ -92,7 +92,6 @@ function normalizeMessage(message) {
 
 function normalizeConversation(item) {
   return {
-    ...item,
     id: String(item?.id || createId()),
     title: String(item?.title || "New Chat"),
     messages: Array.isArray(item?.messages)
@@ -112,7 +111,7 @@ function currentChat() {
   );
 }
 
-/* CHAT CREATION */
+/* ---------------- CHAT CREATION ---------------- */
 
 function createChat() {
   const item = {
@@ -138,7 +137,7 @@ function createChat() {
   return item;
 }
 
-/* LOAD HISTORY */
+/* ---------------- LOAD HISTORY ---------------- */
 
 function loadData() {
   try {
@@ -158,7 +157,7 @@ function loadData() {
   currentChatId = storageGet(CURRENT_KEY, "");
 
   if (!conversations.some(
-    item => item.id === currentChatId
+    item => item.id === currentChatId && !item.archived
   )) {
     currentChatId =
       conversations.find(item => !item.archived)?.id || "";
@@ -169,18 +168,19 @@ function loadData() {
   }
 }
 
-/* THEME */
+/* ---------------- THEME ---------------- */
 
 function applyTheme(theme) {
   const light = theme === "light";
 
-  document.body.classList.toggle(
-    "light-mode",
-    light
-  );
+  document.body.classList.toggle("light-mode", light);
 
   if (themeBtn) {
     themeBtn.textContent = light ? "🌙" : "☀️";
+    themeBtn.setAttribute(
+      "aria-label",
+      light ? "Switch to dark mode" : "Switch to light mode"
+    );
   }
 
   const meta = document.querySelector(
@@ -188,15 +188,10 @@ function applyTheme(theme) {
   );
 
   if (meta) {
-    meta.content = light
-      ? "#f4f6fc"
-      : "#080d25";
+    meta.content = light ? "#f4f6fc" : "#080d25";
   }
 
-  storageSet(
-    THEME_KEY,
-    light ? "light" : "dark"
-  );
+  storageSet(THEME_KEY, light ? "light" : "dark");
 }
 
 function toggleTheme() {
@@ -207,26 +202,16 @@ function toggleTheme() {
   );
 }
 
-themeBtn?.addEventListener(
-  "click",
-  toggleTheme
-);
+themeBtn?.addEventListener("click", toggleTheme);
 
-/* LOADING */
+/* ---------------- LOADING ---------------- */
 
 function setLoading(loading) {
   isGenerating = loading;
 
-  if (sendBtn) {
-    sendBtn.disabled = loading;
-  }
-
-  if (stopBtn) {
-    stopBtn.hidden = !loading;
-  }
+  if (sendBtn) sendBtn.disabled = loading;
+  if (stopBtn) stopBtn.hidden = !loading;
 }
-
-/* STOP GENERATION */
 
 function stopGeneration() {
   if (controller) {
@@ -237,18 +222,15 @@ function stopGeneration() {
   setLoading(false);
 }
 
-stopBtn?.addEventListener(
-  "click",
-  stopGeneration
-);
+stopBtn?.addEventListener("click", stopGeneration);
 
-/* SIDEBAR */
+/* ---------------- SIDEBAR ---------------- */
 
 sidebarBtn?.addEventListener("click", () => {
   app?.classList.toggle("sidebar-collapsed");
 });
 
-/* NEW CHAT */
+/* ---------------- NEW CHAT ---------------- */
 
 newChatBtn?.addEventListener("click", () => {
   stopGeneration();
@@ -257,7 +239,7 @@ newChatBtn?.addEventListener("click", () => {
   createChat();
 });
 
-/* IMAGE VIEWER */
+/* ---------------- IMAGE VIEWER ---------------- */
 
 function closeImageViewer() {
   imageViewer?.remove();
@@ -276,7 +258,6 @@ function openImageViewer(src, alt = "Image preview") {
     "justify-content:center;padding:16px;";
 
   const image = document.createElement("img");
-
   image.src = src;
   image.alt = alt;
 
@@ -285,7 +266,6 @@ function openImageViewer(src, alt = "Image preview") {
     "object-fit:contain;border-radius:10px;";
 
   const close = document.createElement("button");
-
   close.type = "button";
   close.textContent = "✕";
 
@@ -295,15 +275,10 @@ function openImageViewer(src, alt = "Image preview") {
     "border-radius:50%;background:#292929;" +
     "color:white;font-size:22px;";
 
-  close.addEventListener(
-    "click",
-    closeImageViewer
-  );
+  close.addEventListener("click", closeImageViewer);
 
   overlay.addEventListener("click", event => {
-    if (event.target === overlay) {
-      closeImageViewer();
-    }
+    if (event.target === overlay) closeImageViewer();
   });
 
   overlay.append(image, close);
@@ -319,9 +294,9 @@ document.addEventListener("keydown", event => {
   }
 });
 
-/* =========================================
+/* =====================================================
    PART 2 - MESSAGE RENDERING
-========================================= */
+===================================================== */
 
 function createActionButton(label, action, title) {
   const button = document.createElement("button");
@@ -355,7 +330,6 @@ async function downloadImage(url) {
     const objectURL = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
-
     link.href = objectURL;
     link.download = "k-ultra-ai-image.png";
 
@@ -369,13 +343,8 @@ async function downloadImage(url) {
     );
 
   } catch (error) {
-    console.error(error);
-
-    window.open(
-      url,
-      "_blank",
-      "noopener"
-    );
+    console.error("Download error:", error);
+    window.open(url, "_blank", "noopener");
   }
 }
 
@@ -383,12 +352,9 @@ async function downloadImage(url) {
 
 function addImageCard(parent, src, alt) {
   const card = document.createElement("div");
-
-  card.style.cssText =
-    "margin-top:10px;max-width:100%;";
+  card.style.cssText = "margin-top:10px;max-width:100%;";
 
   const image = document.createElement("img");
-
   image.src = src;
   image.alt = alt || "AI image";
   image.loading = "lazy";
@@ -404,7 +370,6 @@ function addImageCard(parent, src, alt) {
   });
 
   const download = document.createElement("button");
-
   download.type = "button";
   download.textContent = "⬇️ Download Image";
 
@@ -441,20 +406,13 @@ function renderContent(container, content) {
       );
     }
 
-    addImageCard(
-      container,
-      match[2],
-      match[1]
-    );
-
+    addImageCard(container, match[2], match[1]);
     lastIndex = pattern.lastIndex;
   }
 
   if (lastIndex < text.length) {
     container.appendChild(
-      document.createTextNode(
-        text.slice(lastIndex)
-      )
+      document.createTextNode(text.slice(lastIndex))
     );
   }
 
@@ -489,20 +447,13 @@ function renderContent(container, content) {
           );
         }
 
-        addImageCard(
-          container,
-          item.url,
-          "AI image"
-        );
-
+        addImageCard(container, item.url, "AI image");
         position = item.end;
       });
 
       if (position < text.length) {
         container.appendChild(
-          document.createTextNode(
-            text.slice(position)
-          )
+          document.createTextNode(text.slice(position))
         );
       }
     }
@@ -512,25 +463,18 @@ function renderContent(container, content) {
   container.style.overflowWrap = "anywhere";
 }
 
-/* MESSAGE ACTION BUTTONS */
+/* MESSAGE ACTIONS UI */
 
 function createMessageActions(message) {
   const actions = document.createElement("div");
-
   actions.className = "message-actions";
 
   actions.style.cssText =
     "display:flex;flex-wrap:wrap;gap:3px;margin-top:8px;";
 
-  actions.appendChild(
-    createActionButton("📋 Copy", "copy", "Copy message")
-  );
-
-  actions.appendChild(
-    createActionButton("🔊 Speaker", "speak", "Listen to message")
-  );
-
-  actions.appendChild(
+  actions.append(
+    createActionButton("📋 Copy", "copy", "Copy message"),
+    createActionButton("🔊 Speaker", "speak", "Listen to message"),
     createActionButton("⋯ More", "more", "More options")
   );
 
@@ -555,7 +499,7 @@ function createMessageActions(message) {
   return actions;
 }
 
-/* CREATE MESSAGE */
+/* ADD MESSAGE */
 
 function addMessageElement(message, index) {
   const wrapper = document.createElement("div");
@@ -568,20 +512,14 @@ function addMessageElement(message, index) {
 
   wrapper.dataset.messageId = message.id;
   wrapper.dataset.index = String(index);
-  wrapper.dataset.role = message.role;
 
   const bubble = document.createElement("div");
-
   bubble.className = "message-bubble";
 
-  renderContent(
+  renderContent(bubble, message.content);
+
+  wrapper.append(
     bubble,
-    message.content
-  );
-
-  wrapper.appendChild(bubble);
-
-  wrapper.appendChild(
     createMessageActions(message)
   );
 
@@ -597,16 +535,10 @@ function renderChat() {
 
   chat.replaceChildren();
 
-  const messages =
-    currentChat()?.messages || [];
+  const messages = currentChat()?.messages || [];
 
-  if (welcome) {
-    welcome.hidden = messages.length > 0;
-  }
-
-  if (suggestions) {
-    suggestions.hidden = messages.length > 0;
-  }
+  if (welcome) welcome.hidden = messages.length > 0;
+  if (suggestions) suggestions.hidden = messages.length > 0;
 
   messages.forEach((message, index) => {
     addMessageElement(message, index);
@@ -615,27 +547,52 @@ function renderChat() {
   chat.scrollTop = chat.scrollHeight;
 }
 
-/* =========================================
+/* ADD MESSAGE TO HISTORY */
+
+function addMessage(role, content) {
+  const session = currentChat();
+  if (!session) return null;
+
+  const message = normalizeMessage({
+    id: createId(),
+    role,
+    content,
+    createdAt: Date.now()
+  });
+
+  session.messages.push(message);
+  session.updatedAt = Date.now();
+
+  if (session.title === "New Chat" && role === "user") {
+    session.title = content.slice(0, 40) || "New Chat";
+  }
+
+  saveData();
+  renderChat();
+  renderChatList();
+
+  return message;
+}
+
+/* =====================================================
    PART 3 - CHAT HISTORY & MENU
-========================================= */
+===================================================== */
 
 function closeChatMenu() {
   chatMenuElement?.remove();
   chatMenuElement = null;
 }
 
-/* PASSCODE HASH */
+/* PASSCODE */
 
 async function hashChatPasscode(passcode) {
-  if (!crypto?.subtle) {
-    throw new Error(
-      "Secure passcode feature is not supported."
-    );
+  if (!window.crypto?.subtle) {
+    throw new Error("Secure passcode is not supported.");
   }
 
   const data = new TextEncoder().encode(passcode);
 
-  const hash = await crypto.subtle.digest(
+  const hash = await window.crypto.subtle.digest(
     "SHA-256",
     data
   );
@@ -647,12 +604,7 @@ async function hashChatPasscode(passcode) {
 
 /* MENU OPTION */
 
-function addChatMenuOption(
-  menu,
-  label,
-  callback,
-  danger = false
-) {
+function addChatMenuOption(menu, label, callback, danger = false) {
   const button = document.createElement("button");
 
   button.type = "button";
@@ -716,8 +668,6 @@ function showChatMenu(item) {
     box-shadow:0 10px 40px rgba(0,0,0,.25);
   `;
 
-  /* PIN */
-
   addChatMenuOption(
     menu,
     item.pinned ? "📌 Unpin" : "📌 Pin",
@@ -728,46 +678,28 @@ function showChatMenu(item) {
     }
   );
 
-  /* RENAME */
+  addChatMenuOption(menu, "✏️ Rename", () => {
+    const name = prompt("Enter new chat name:", item.title);
 
-  addChatMenuOption(
-    menu,
-    "✏️ Rename",
-    () => {
-      const name = prompt(
-        "Enter new chat name:",
-        item.title
-      );
-
-      if (name?.trim()) {
-        item.title = name.trim().slice(0, 70);
-        saveData();
-        renderChatList();
-      }
-    }
-  );
-
-  /* PROJECT */
-
-  addChatMenuOption(
-    menu,
-    "📁 Add to project",
-    () => {
-      const project = prompt(
-        "Enter project name:",
-        item.project || ""
-      );
-
-      if (project === null) return;
-
-      item.project = project.trim();
-
+    if (name?.trim()) {
+      item.title = name.trim().slice(0, 70);
       saveData();
       renderChatList();
     }
-  );
+  });
 
-  /* ARCHIVE */
+  addChatMenuOption(menu, "📁 Add to project", () => {
+    const project = prompt(
+      "Enter project name:",
+      item.project || ""
+    );
+
+    if (project === null) return;
+
+    item.project = project.trim();
+    saveData();
+    renderChatList();
+  });
 
   addChatMenuOption(
     menu,
@@ -776,11 +708,10 @@ function showChatMenu(item) {
       item.archived = !item.archived;
 
       if (item.id === currentChatId && item.archived) {
-        const next = conversations.find(
-          c => !c.archived && c.id !== item.id
-        );
-
-        currentChatId = next?.id || "";
+        currentChatId =
+          conversations.find(
+            c => !c.archived && c.id !== item.id
+          )?.id || "";
       }
 
       if (!currentChatId) {
@@ -793,33 +724,24 @@ function showChatMenu(item) {
     }
   );
 
-  /* LOCK */
-
   addChatMenuOption(
     menu,
     item.lockHash ? "🔓 Unlock chat" : "🔒 Lock chat",
     async () => {
       if (item.lockHash) {
-        const oldPasscode = prompt(
-          "Enter current passcode:"
-        );
-
+        const oldPasscode = prompt("Enter current passcode:");
         if (oldPasscode === null) return;
 
-        const oldHash = await hashChatPasscode(
-          oldPasscode
-        );
+        const hash = await hashChatPasscode(oldPasscode);
 
-        if (oldHash !== item.lockHash) {
+        if (hash !== item.lockHash) {
           alert("Incorrect passcode!");
           return;
         }
 
         item.lockHash = "";
-
         saveData();
         renderChatList();
-
         alert("Chat unlocked.");
         return;
       }
@@ -835,35 +757,28 @@ function showChatMenu(item) {
         return;
       }
 
-      const confirmation = prompt(
-        "Confirm passcode:"
-      );
+      const confirmation = prompt("Confirm passcode:");
 
       if (confirmation !== passcode) {
         alert("Passcodes do not match.");
         return;
       }
 
-      item.lockHash = await hashChatPasscode(
-        passcode
-      );
+      item.lockHash = await hashChatPasscode(passcode);
 
       saveData();
       renderChatList();
-
       alert("Chat locked.");
     }
   );
-
-  /* DELETE CHAT */
 
   addChatMenuOption(
     menu,
     "🗑️ Delete",
     () => {
-      if (!confirm(
-        "Delete this conversation permanently?"
-      )) return;
+      if (!confirm("Delete this conversation permanently?")) {
+        return;
+      }
 
       conversations = conversations.filter(
         c => c.id !== item.id
@@ -874,25 +789,17 @@ function showChatMenu(item) {
       }
 
       if (!currentChat()) {
-        const next = conversations.find(
-          c => !c.archived
-        );
-
-        if (next) {
-          currentChatId = next.id;
-          saveData();
-          renderChat();
-          renderChatList();
-        } else {
-          createChat();
-        }
-
-        return;
+        currentChatId =
+          conversations.find(c => !c.archived)?.id || "";
       }
 
-      saveData();
-      renderChat();
-      renderChatList();
+      if (!currentChatId) {
+        createChat();
+      } else {
+        saveData();
+        renderChat();
+        renderChatList();
+      }
     },
     true
   );
@@ -900,13 +807,10 @@ function showChatMenu(item) {
   overlay.appendChild(menu);
 
   overlay.addEventListener("click", event => {
-    if (event.target === overlay) {
-      closeChatMenu();
-    }
+    if (event.target === overlay) closeChatMenu();
   });
 
   document.body.appendChild(overlay);
-
   chatMenuElement = overlay;
 }
 
@@ -914,9 +818,7 @@ function showChatMenu(item) {
 
 async function openChatItem(item) {
   if (item.lockHash) {
-    const passcode = prompt(
-      "Enter chat passcode:"
-    );
+    const passcode = prompt("Enter chat passcode:");
 
     if (passcode === null) return;
 
@@ -932,6 +834,8 @@ async function openChatItem(item) {
       return;
     }
   }
+
+  stopGeneration();
 
   currentChatId = item.id;
 
@@ -955,7 +859,6 @@ function attachLongPress(element, item) {
       setTimeout(() => {
         suppressChatClick = false;
       }, 700);
-
     }, 550);
   };
 
@@ -964,11 +867,9 @@ function attachLongPress(element, item) {
     timer = null;
   };
 
-  element.addEventListener(
-    "touchstart",
-    start,
-    { passive: true }
-  );
+  element.addEventListener("touchstart", start, {
+    passive: true
+  });
 
   element.addEventListener("touchend", cancel);
   element.addEventListener("touchmove", cancel);
@@ -976,7 +877,6 @@ function attachLongPress(element, item) {
 
   element.addEventListener("contextmenu", event => {
     event.preventDefault();
-
     suppressChatClick = true;
     showChatMenu(item);
 
@@ -990,7 +890,7 @@ function attachLongPress(element, item) {
   element.addEventListener("mouseleave", cancel);
 }
 
-/* CHAT LIST */
+/* RENDER CHAT LIST */
 
 function renderChatList() {
   if (!chatSessions) return;
@@ -1010,34 +910,42 @@ function renderChatList() {
         return Number(b.pinned) - Number(a.pinned);
       }
 
-      return (
-        (b.updatedAt || 0) -
-        (a.updatedAt || 0)
-      );
+      return b.updatedAt - a.updatedAt;
     });
+
+
+  if (!sortedChats.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No chats found.";
+    empty.style.cssText =
+      "padding:12px;color:var(--muted);font-size:13px;";
+    chatSessions.appendChild(empty);
+    return;
+  }
 
   sortedChats.forEach(item => {
     const row = document.createElement("div");
+    row.className = "chat-row";
 
-    row.className = "chat-list-item";
-    row.dataset.chatId = item.id;
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "open-chat";
+    open.textContent = (item.pinned ? "📌 " : "") + item.title;
 
     if (item.id === currentChatId) {
-      row.classList.add("active");
+      open.classList.add("active");
     }
 
-    if (item.pinned) {
-      row.classList.add("pinned");
-    }
-
-    const title = document.createElement("span");
-     title.className = "chat-list-title";
-    title.textContent = item.title || "New Chat";
+    open.addEventListener("click", () => {
+      if (suppressChatClick) {
+        suppressChatClick = false;
+        return;
+      }
+      openChatItem(item);
+    });
 
     const more = document.createElement("button");
-
     more.type = "button";
-    more.className = "chat-more-button";
     more.textContent = "⋯";
     more.setAttribute("aria-label", "Chat options");
 
@@ -1046,64 +954,238 @@ function renderChatList() {
       showChatMenu(item);
     });
 
-    row.append(title, more);
-
-    row.addEventListener("click", () => {
-      if (suppressChatClick) {
-        suppressChatClick = false;
-        return;
-      }
-
-      openChatItem(item);
-    });
-
+    row.append(open, more);
     attachLongPress(row, item);
-
     chatSessions.appendChild(row);
   });
 }
 
-/* SEARCH */
+/* =====================================================
+   PART 4 - AI CONNECTION & MESSAGE SENDING
+===================================================== */
 
-searchInput?.addEventListener(
-  "input",
-  renderChatList
-);
+/* ADD LOADING MESSAGE */
 
-/* =========================================
-   PART 4 - MESSAGE ACTIONS
-========================================= */
+function showLoading() {
+  if (!chat) return;
+
+  const loading = document.createElement("div");
+  loading.id = "aiLoading";
+  loading.className = "message assistant-message";
+
+  const bubble = document.createElement("div");
+  bubble.className = "message-bubble";
+  bubble.textContent = "K-ULTRA AI is thinking...";
+
+  loading.appendChild(bubble);
+  chat.appendChild(loading);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function hideLoading() {
+  $("aiLoading")?.remove();
+}
+
+/* ADD MESSAGE */
+
+function addMessage(role, content) {
+  const session = currentChat();
+  if (!session) return null;
+
+  const message = normalizeMessage({
+    id: createId(),
+    role,
+    content,
+    createdAt: Date.now()
+  });
+
+  session.messages.push(message);
+  session.updatedAt = Date.now();
+
+  if (session.title === "New Chat" && role === "user") {
+    session.title = content.slice(0, 40) || "New Chat";
+  }
+
+  saveData();
+  renderChat();
+  renderChatList();
+
+  return message;
+}
+
+/* SEND MESSAGE */
+
+async function sendMessage(message, options = {}) {
+  const text = String(message || "").trim();
+
+  if (!text || isGenerating) return;
+
+  const session = currentChat();
+  if (!session) return;
+
+  const sessionId = session.id;
+
+  stopSpeaker();
+
+  if (options.regenerate) {
+    const lastUserIndex = session.messages
+      .map(item => item.role)
+      .lastIndexOf("user");
+
+    if (lastUserIndex === -1) return;
+
+    session.messages = session.messages.slice(
+      0,
+      lastUserIndex + 1
+    );
+
+    saveData();
+    renderChat();
+  } else {
+    const finalMessage = selectedFileText
+      ? text + "\n\nAttached file: " +
+        selectedFileName + "\n\n" + selectedFileText
+      : text;
+
+    addMessage("user", finalMessage);
+    clearSelectedFile();
+  }
+
+  if (input) input.value = "";
+
+  controller = new AbortController();
+  setLoading(true);
+  showLoading();
+
+  try {
+    const history = session.messages
+      .slice(-20)
+      .map(item => ({
+        role: item.role === "assistant"
+          ? "assistant"
+          : "user",
+        content: item.content
+      }));
+
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text,
+        history: history
+      }),
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        "Server error: " + response.status
+      );
+    }
+
+    const data = await response.json();
+
+    const answer =
+      data.response ||
+      data.reply ||
+      data.message ||
+      data.output ||
+      data.result;
+
+    if (!answer || typeof answer !== "string") {
+      throw new Error(
+        data.error || "No valid AI response received."
+      );
+    }
+
+    const activeSession = conversations.find(
+      item => item.id === sessionId
+    );
+
+    if (activeSession) {
+      const aiMessage = normalizeMessage({
+        role: "assistant",
+        content: answer
+      });
+
+      activeSession.messages.push(aiMessage);
+      activeSession.updatedAt = Date.now();
+
+      saveData();
+
+      if (currentChatId === sessionId) {
+        renderChat();
+      }
+
+      renderChatList();
+    }
+
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return;
+    }
+
+    console.error("AI connection error:", error);
+
+    if (currentChatId === sessionId) {
+      addMessage(
+        "assistant",
+        "Sorry! K-ULTRA AI could not connect to the server.\n\n" +
+        error.message +
+        "\n\nPlease check your internet connection and try again."
+      );
+    }
+
+  } finally {
+    hideLoading();
+    controller = null;
+    setLoading(false);
+  }
+}
+
+/* REGENERATE RESPONSE */
+
+async function regenerateLastResponse() {
+  const session = currentChat();
+
+  if (!session || isGenerating) return;
+
+  const lastUser = [...session.messages]
+    .reverse()
+    .find(item => item.role === "user");
+
+  if (!lastUser) {
+    alert("No user message to regenerate.");
+    return;
+  }
+
+  await sendMessage(lastUser.content, {
+    regenerate: true
+  });
+}
+
+/* =====================================================
+   PART 5 - MESSAGE ACTIONS
+===================================================== */
 
 /* COPY */
 
 async function copyMessage(message) {
   try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(message);
-    } else {
-      throw new Error("Clipboard unavailable");
-    }
-
+    await navigator.clipboard.writeText(message);
     alert("Message copied!");
-
   } catch (error) {
     const area = document.createElement("textarea");
-
     area.value = message;
-
     document.body.appendChild(area);
-
     area.select();
 
     const copied = document.execCommand("copy");
-
     area.remove();
 
-    alert(
-      copied
-        ? "Message copied!"
-        : "Unable to copy message."
-    );
+    alert(copied ? "Message copied!" : "Copy failed.");
   }
 }
 
@@ -1117,14 +1199,11 @@ function speakMessage(message) {
 
   stopSpeaker();
 
-  const speech = new SpeechSynthesisUtterance(
-    String(message)
-  );
+  const speech = new SpeechSynthesisUtterance(message);
 
-  speech.lang =
-    /[\u0C00-\u0C7F]/.test(message)
-      ? "te-IN"
-      : "en-IN";
+  speech.lang = /[\u0C00-\u0C7F]/.test(message)
+    ? "te-IN"
+    : "en-IN";
 
   speechSynthesis.speak(speech);
 }
@@ -1137,47 +1216,10 @@ function stopSpeaker() {
   }
 }
 
-/* REGENERATE */
+/* MESSAGE ACTION HANDLER */
 
-async function regenerateLastResponse() {
+async function handleMessageAction(action, messageId) {
   const session = currentChat();
-
-  if (!session || isGenerating) return;
-
-  let lastUserIndex = -1;
-
-  for (
-    let i = session.messages.length - 1;
-    i >= 0;
-    i--
-  ) {
-    if (session.messages[i].role === "user") {
-      lastUserIndex = i;
-      break;
-    }
-  }
-   if (lastUserIndex === -1) return;
-
-  const lastUser = session.messages[lastUserIndex];
-
-  session.messages = session.messages.slice(
-    0,
-    lastUserIndex + 1
-  );
-
-  saveData();
-  renderChat();
-
-  await sendMessage(lastUser.content, {
-    regenerate: true
-  });
-}
-
-/* EDIT MESSAGE */
-
-async function editMessage(messageId) {
-  const session = currentChat();
-
   if (!session) return;
 
   const index = session.messages.findIndex(
@@ -1188,42 +1230,7 @@ async function editMessage(messageId) {
 
   const message = session.messages[index];
 
-  if (message.role !== "user") return;
-
-  const edited = prompt(
-    "Edit message:",
-    message.content
-  );
-
-  if (!edited?.trim()) return;
-
-  session.messages = session.messages.slice(
-    0,
-    index
-  );
-
-  saveData();
-  renderChat();
-
-  await sendMessage(edited.trim());
-}
-
-/* MESSAGE ACTION HANDLER */
-
-async function handleMessageAction(action, messageId) {
-  const session = currentChat();
-
-  if (!session) return;
-
-  const index = session.messages.findIndex(
-    item => item.id === messageId
-  );
-   if (index === -1) return;
-
-  const message = session.messages[index];
-
   switch (action) {
-
     case "copy":
       await copyMessage(message.content);
       break;
@@ -1236,7 +1243,6 @@ async function handleMessageAction(action, messageId) {
       if (!confirm("Delete this message?")) return;
 
       session.messages.splice(index, 1);
-
       session.updatedAt = Date.now();
 
       saveData();
@@ -1245,58 +1251,61 @@ async function handleMessageAction(action, messageId) {
       break;
 
     case "edit":
-      await editMessage(messageId);
+      if (message.role !== "user") return;
+
+      const edited = prompt(
+        "Edit your message:",
+        message.content
+      );
+
+      if (edited === null || !edited.trim()) return;
+
+      stopGeneration();
+
+      session.messages = session.messages.slice(0, index);
+      saveData();
+      renderChat();
+
+      await sendMessage(edited.trim());
       break;
 
     case "regenerate":
+      if (message.role !== "assistant") return;
+
       await regenerateLastResponse();
       break;
 
-    case "more": {
+    case "more":
       const option = prompt(
-        "1. Copy\n" +
-        "2. Speaker\n" +
-        "3. Delete\n" +
-        "4. Stop Speaker"
+        "1. Copy\n2. Speaker\n3. Delete\n4. Stop Speaker"
       );
 
       if (option === "1") {
         await copyMessage(message.content);
-
       } else if (option === "2") {
         speakMessage(message.content);
-
       } else if (option === "3") {
-        if (confirm("Delete message?")) {
+        if (confirm("Delete this message?")) {
           session.messages.splice(index, 1);
-
           saveData();
           renderChat();
           renderChatList();
         }
-
       } else if (option === "4") {
         stopSpeaker();
       }
-
       break;
-    }
   }
 }
 
 /* MESSAGE BUTTON EVENTS */
-chat?.addEventListener("click", event => {
-  const button = event.target.closest(
-    "[data-action]"
-  );
 
+chat?.addEventListener("click", event => {
+  const button = event.target.closest("[data-action]");
   if (!button) return;
 
   const wrapper = button.closest(".message");
-
-  if (!wrapper) return;
-
-  const messageId = wrapper.dataset.messageId;
+  const messageId = wrapper?.dataset.messageId;
 
   if (!messageId) return;
 
@@ -1309,216 +1318,19 @@ chat?.addEventListener("click", event => {
   });
 });
 
-/* =========================================
-   PART 5 - AI CONNECTION
-========================================= */
-
-/* ADD MESSAGE TO HISTORY */
-
-function addMessage(role, content) {
-  const session = currentChat();
-
-  if (!session) return null;
-
-  const message = {
-    id: createId(),
-    role,
-    content: String(content),
-    createdAt: Date.now()
-  };
-
-  session.messages.push(message);
-  session.updatedAt = Date.now();
-
-  if (
-    session.title === "New Chat" &&
-    role === "user"
-  ) {
-    session.title = content
-      .trim()
-      .slice(0, 35) || "New Chat";
-  }
-
-  saveData();
-  renderChat();
-  renderChatList();
-
-  return message;
-}
-
-/* SEND MESSAGE */
-
-async function sendMessage(
-  text,
-  options = {}
-) {
-  if (isGenerating) return;
-
-  const message = String(text || "").trim();
-
-  if (!message) return;
-
-  let session = currentChat();
-
-  if (!session) {
-    session = createChat();
-  }
-
-  if (!options.regenerate) {
-    addMessage("user", message);
-  }
-
-  const history = session.messages.map(item => ({
-    role: item.role,
-    content: item.content
-  }));
-
-  controller = new AbortController();
-
-  setLoading(true);
-
-  const loading = document.createElement("div");
-
-  loading.className = "message assistant-message";
-  loading.textContent = "K-ULTRA AI is thinking...";
-
-  chat?.appendChild(loading);
-
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json"
-      },
-
-      body: JSON.stringify({
-        message,
-        history
-      }),
-
-      signal: controller.signal
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        "Server error: " + response.status
-      );
-    }
-     const data = await response.json();
-
-    if (data.error) {
-      throw new Error(data.error);
-    }
-
-    const reply =
-      data.reply ||
-      data.response ||
-      data.result ||
-      "";
-
-    if (!reply) {
-      throw new Error(
-        "No reply received from K-ULTRA AI."
-      );
-    }
-
-    loading.remove();
-
-    addMessage("assistant", reply);
-
-  } catch (error) {
-    loading.remove();
-
-    if (error.name === "AbortError") {
-      addMessage(
-        "assistant",
-        "Generation stopped."
-      );
-    } else {
-      console.error("AI error:", error);
-
-      addMessage(
-        "assistant",
-        "Sorry, something went wrong.\n\n" +
-        error.message
-      );
-    }
-
-  } finally {
-    controller = null;
-    setLoading(false);
-    input?.focus();
-  }
-}
-/* FORM SUBMIT */
-
-form?.addEventListener("submit", event => {
-  event.preventDefault();
-
-  const message = input?.value.trim();
-
-  if (!message || isGenerating) return;
-
-  let finalMessage = message;
-
-  if (selectedFileText) {
-    finalMessage +=
-      "\n\nAttached file content:\n" +
-      selectedFileText;
-  }
-
-  input.value = "";
-
-  input.style.height = "auto";
-
-  sendMessage(finalMessage);
-
-  clearSelectedFile();
-});
-
-/* ENTER KEY */
-
-input?.addEventListener("keydown", event => {
-  if (
-    event.key === "Enter" &&
-    !event.shiftKey
-  ) {
-    event.preventDefault();
-
-    if (form?.requestSubmit) {
-      form.requestSubmit();
-    }
-  }
-});
-
-/* AUTO RESIZE */
-
-input?.addEventListener("input", () => {
-  input.style.height = "auto";
-
-  input.style.height =
-    Math.min(input.scrollHeight, 180) + "px";
-});
-
-/* =========================================
-   PART 6 - FILE ATTACHMENT
-========================================= */
+/* =====================================================
+   PART 6 - FILE ATTACHMENTS
+===================================================== */
 
 function clearSelectedFile() {
   selectedFileText = "";
-     if (selectedImageURL) {
-    URL.revokeObjectURL(selectedImageURL);
-    selectedImageURL = "";
-  }
+  selectedFileName = "";
+
+  if (fileInput) fileInput.value = "";
 
   if (filePreview) {
     filePreview.replaceChildren();
     filePreview.hidden = true;
-  }
-
-  if (fileInput) {
-    fileInput.value = "";
   }
 }
 
@@ -1528,79 +1340,61 @@ attachBtn?.addEventListener("click", () => {
   fileInput?.click();
 });
 
-/* FILE SELECT */
+/* FILE SELECTION */
 
 fileInput?.addEventListener("change", async () => {
   const file = fileInput.files?.[0];
 
   if (!file) return;
 
-  clearSelectedFile();
+  const allowed = /\.(txt|md)$/i.test(file.name);
 
-  if (file.size > 5 * 1024 * 1024) {
-    alert("Please select a file smaller than 5 MB.");
+  if (!allowed) {
+    alert(
+      "Currently, text files (.txt and .md) are supported for reading."
+    );
+    clearSelectedFile();
     return;
   }
 
-  if (
-    file.type.startsWith("image/") &&
-    ["image/png", "image/jpeg"].includes(file.type)
-  ) {
-    selectedImageURL = URL.createObjectURL(file);
+  if (file.size > 1024 * 1024) {
+    alert("File must be smaller than 1 MB.");
+    clearSelectedFile();
+    return;
+  }
+
+  try {
+    selectedFileText = await file.text();
+    selectedFileName = file.name;
 
     if (filePreview) {
-      const image = document.createElement("img");
+      filePreview.replaceChildren();
 
-      image.src = selectedImageURL;
-      image.alt = "Selected image";
+      const label = document.createElement("span");
+      label.textContent = "📎 " + file.name;
 
-      image.style.cssText =
-        "max-width:130px;max-height:100px;" +
-        "border-radius:10px;";
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = " ✕";
+      remove.addEventListener(
+        "click",
+        clearSelectedFile
+      );
 
-      filePreview.appendChild(image);
+      filePreview.append(label, remove);
       filePreview.hidden = false;
     }
 
-    selectedFileText =
-      "[An image named " + file.name +
-      " is attached. Image analysis requires backend vision support.]";
-
-    return;
+  } catch (error) {
+    console.error(error);
+    alert("Unable to read this file.");
+    clearSelectedFile();
   }
-
-  if (
-    file.type.startsWith("text/") ||
-    /\.(txt|md)$/i.test(file.name)
-  ) {
-    try {
-      selectedFileText = await file.text();
-
-      if (filePreview) {
-        filePreview.textContent =
-          "📎 " + file.name;
-
-        filePreview.hidden = false;
-  }
-    } catch (error) {
-      console.error(error);
-      alert("Unable to read this file.");
-      clearSelectedFile();
-    }
-
-    return;
-  }
-
-  alert(
-    "Supported files: TXT, MD, PNG and JPG."
-  );
-
-  clearSelectedFile();
 });
 
-/* =========================================
+/* =====================================================
    PART 7 - VOICE INPUT
-========================================= */
+===================================================== */
 
 function startVoiceInput() {
   const SpeechRecognition =
@@ -1608,15 +1402,13 @@ function startVoiceInput() {
     window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    alert(
-      "Voice input is not supported in this browser."
-    );
+    alert("Voice input is not supported in this browser.");
     return;
   }
 
-  if (recognition) {
-    recognition.stop();
-    recognition = null;
+  if (isListening) {
+    recognition?.stop();
+    return;
   }
 
   recognition = new SpeechRecognition();
@@ -1626,6 +1418,8 @@ function startVoiceInput() {
   recognition.interimResults = false;
 
   recognition.onstart = () => {
+    isListening = true;
+
     if (micBtn) {
       micBtn.textContent = "🔴";
     }
@@ -1637,15 +1431,10 @@ function startVoiceInput() {
 
     if (input) {
       input.value = (
-        input.value
-          ? input.value + " "
-          : ""
-      ) + transcript;
+        input.value + " " + transcript
+      ).trim();
 
       input.focus();
-      input.dispatchEvent(
-        new Event("input")
-      );
     }
   };
 
@@ -1654,11 +1443,11 @@ function startVoiceInput() {
   };
 
   recognition.onend = () => {
+    isListening = false;
+
     if (micBtn) {
       micBtn.textContent = "🎤";
     }
-
-    recognition = null;
   };
 
   try {
@@ -1667,52 +1456,64 @@ function startVoiceInput() {
     console.error(error);
   }
 }
+
 micBtn?.addEventListener(
   "click",
   startVoiceInput
 );
 
-/* =========================================
-   PART 8 - SUGGESTIONS
-========================================= */
+/* =====================================================
+   PART 8 - FORM & SUGGESTIONS
+===================================================== */
+
+/* FORM SUBMIT */
+
+form?.addEventListener("submit", event => {
+  event.preventDefault();
+
+  if (isGenerating) return;
+
+  sendMessage(input?.value || "");
+});
+
+/* ENTER TO SEND */
+
+input?.addEventListener("keydown", event => {
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey
+  ) {
+    event.preventDefault();
+    form?.requestSubmit();
+  }
+});
+
+/* SUGGESTIONS */
 
 suggestions?.addEventListener("click", event => {
-  const button = event.target.closest(
-    "[data-prompt]"
-  );
+  const button = event.target.closest("[data-prompt]");
 
   if (!button) return;
 
   const promptText = button.dataset.prompt;
 
-  if (!promptText) return;
+  if (input) input.value = promptText;
 
-  sendMessage(promptText);
+  form?.requestSubmit();
 });
 
-/* =========================================
-   PART 9 - CLEANUP
-========================================= */
+/* AUTO RESIZE INPUT */
 
-window.addEventListener("beforeunload", () => {
-  stopSpeaker();
+input?.addEventListener("input", () => {
+  input.style.height = "auto";
 
-  if (recognition) {
-    recognition.stop();
-  }
-
-  if (controller) {
-    controller.abort();
-  }
-
-  if (selectedImageURL) {
-    URL.revokeObjectURL(selectedImageURL);
-  }
+  input.style.height =
+    Math.min(input.scrollHeight, 150) + "px";
 });
 
-/* =========================================
-   PART 10 - INITIALIZATION
-========================================= */
+/* =====================================================
+   PART 9 - INITIALIZATION
+===================================================== */
 
 function initializeApp() {
   loadData();
@@ -1728,10 +1529,15 @@ function initializeApp() {
   renderChat();
   renderChatList();
 
-  console.log(
-    "K-ULTRA AI VERSION 24 READY"
-  );
+  console.log("K-ULTRA AI VERSION 25 READY");
 }
+
+/* CLEANUP */
+
+window.addEventListener("beforeunload", () => {
+  stopSpeaker();
+  recognition?.stop();
+});
 
 /* START */
 
@@ -1742,9 +1548,9 @@ if (document.readyState === "loading") {
     { once: true }
   );
 } else {
-   initializeApp();
+  initializeApp();
 }
 
-/* =========================================
-   END OF K-ULTRA AI VERSION 24
-========================================= */
+/* =====================================================
+   END OF K-ULTRA AI VERSION 25
+===================================================== */
