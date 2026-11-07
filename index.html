@@ -1,107 +1,501 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#080d25">
-  <meta name="description" content="K-ULTRA AI - Your intelligent AI assistant">
-  <title>K-ULTRA AI</title>
+  <meta name="description" content="K-ULTRA AI - Advanced multilingual AI workspace">
+  <title>K-ULTRA AI | Version 50</title>
+
   <link rel="stylesheet" href="style.css">
 
+  <!-- Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Code highlighting -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+
+  <!-- PDF reading -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://unpkg.com/mammoth@1.9.0/mammoth.browser.min.js"></script>
+
+  <!-- DOCX reading -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js"></script>
+
+  <!-- XLSX reading and writing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <!-- ZIP support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- DOCX creation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.js"></script>
 </head>
+
 <body>
-  <div class="app" id="app">
-    <aside class="sidebar" id="sidebar">
-      <div class="brand">
-        <div class="brand-logo">K</div>
-        <div>
-          <h2>K-ULTRA AI</h2>
-          <small>Intelligence platform</small>
-        </div>
+
+<div class="app" id="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+      <div class="brand-logo">K</div>
+      <div class="brand-info">
+        <h2>K-ULTRA AI</h2>
+        <span>VERSION 50</span>
+      </div>
+      <button id="sidebarClose" class="icon-btn mobile-only"
+        aria-label="Close sidebar">✕</button>
+    </div>
+
+    <button id="newChatBtn" class="new-chat-btn">
+      <span>＋</span> New Chat
+    </button>
+
+    <nav class="main-nav">
+
+      <button class="nav-item active" data-view="chatView">
+        <span>◉</span> AI Chat
+      </button>
+
+      <button class="nav-item" data-view="codeView">
+        <span>⌘</span> Code Studio
+      </button>
+
+      <button class="nav-item" data-view="agentView">
+        <span>✧</span> AI Agent
+      </button>
+
+      <button class="nav-item" data-view="documentView">
+        <span>▤</span> Documents
+      </button>
+
+      <button class="nav-item" data-view="imageView">
+        <span>▧</span> Image Studio
+      </button>
+
+    </nav>
+
+    <div class="sidebar-section">
+      <h3>WORKSPACE</h3>
+
+      <button class="nav-item" data-view="projectsView">
+        <span>▣</span> My Projects
+      </button>
+
+      <button class="nav-item" data-view="filesView">
+        <span>▤</span> My Files
+      </button>
+    </div>
+
+    <div class="history-section">
+      <div class="history-heading">
+        <h3>CHAT HISTORY</h3>
       </div>
 
-      <button class="new-chat" id="newChatBtn">＋ New chat</button>
+      <input
+        type="search"
+        id="chatSearch"
+        placeholder="Search conversations..."
+        aria-label="Search conversations">
 
-      <input id="chatSearch" class="search" placeholder="Search chats...">
-      <div class="history-title">YOUR CHATS</div>
       <div id="chatSessions" class="chat-sessions"></div>
+    </div>
 
-      <div class="sidebar-bottom">
-        <button id="themeToggle" class="side-button">☀️ Change theme</button>
-        <div class="version">K-ULTRA AI · Version 1.0</div>
-      </div>
-    </aside>
+    <div class="sidebar-bottom">
 
-    <main class="main">
-      <header class="topbar">
-        <button id="sidebarToggle" class="icon-button" aria-label="Toggle sidebar">☰</button>
-        <div class="top-brand">
-          <span class="mini-logo">K</span>
-          <strong>K-ULTRA AI</strong>
-          <span class="online-dot"></span>
+      <div class="provider-status">
+        <span class="status-dot"></span>
+        <div>
+          <strong>AI Connection</strong>
+          <small id="connectionStatus">Checking...</small>
         </div>
-        <button id="headerNewChat" class="icon-button" title="New chat">＋</button>
-      </header>
+      </div>
 
-      <section class="chat-area" id="chatArea">
+      <button id="settingsBtn" class="nav-item">
+        <span>⚙</span> Settings
+      </button>
+
+      <div class="user-profile">
+        <div class="user-avatar">K</div>
+        <div>
+          <strong>K-ULTRA USER</strong>
+          <small>Personal Workspace</small>
+        </div>
+      </div>
+
+    </div>
+
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- HEADER -->
+    <header class="topbar">
+
+      <div class="topbar-left">
+        <button id="sidebarToggle" class="icon-btn"
+          aria-label="Toggle sidebar">☰</button>
+
+        <div class="mobile-brand">
+          <span class="brand-logo small-logo">K</span>
+          <strong>K-ULTRA AI</strong>
+        </div>
+
+        <div class="current-mode">
+          <span id="currentMode">AI Chat</span>
+          <span class="version-label">V50</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+
+        <select id="languageSelect" aria-label="Response language">
+          <option value="auto">Auto Language</option>
+          <option value="en">English</option>
+          <option value="te">తెలుగు</option>
+          <option value="hi">हिन्दी</option>
+          <option value="ta">தமிழ்</option>
+          <option value="kn">ಕನ್ನಡ</option>
+          <option value="ml">മലയാളം</option>
+          <option value="fr">Français</option>
+          <option value="es">Español</option>
+          <option value="de">Deutsch</option>
+          <option value="ja">日本語</option>
+          <option value="zh">中文</option>
+        </select>
+
+        <button id="themeToggle" class="icon-btn"
+          aria-label="Toggle theme">☀</button>
+
+      </div>
+
+    </header>
+
+    <!-- VIEW CONTAINER -->
+    <section class="workspace">
+
+      <!-- CHAT VIEW -->
+      <section id="chatView" class="view active-view">
+
         <div id="welcome" class="welcome">
+
           <div class="welcome-logo">K</div>
-          <p class="eyebrow">YOUR AI WORKSPACE</p>
+
           <h1>Welcome to <span>K-ULTRA AI</span></h1>
-          <p class="welcome-subtitle">Ask, create, learn and build something amazing.</p>
+
+          <p>Your intelligent multilingual AI workspace.</p>
 
           <div id="suggestions" class="suggestions">
-            <button data-prompt="Explain artificial intelligence in simple Telugu and English.">
-              <b>✦ Learn something</b><small>Explain a topic clearly</small>
+
+            <button data-prompt="Explain artificial intelligence simply">
+              <span>✧</span>
+              <strong>Learn something</strong>
+              <small>Explain a new topic</small>
             </button>
-            <button data-prompt="Write a professional Python program with explanation.">
-              <b>⌘ Build with code</b><small>Generate and explain code</small>
+
+            <button data-prompt="Help me write a Python program">
+              <span>⌘</span>
+              <strong>Write code</strong>
+              <small>Build a programming project</small>
             </button>
-            <button data-prompt="Give me a professional project plan for a modern AI application.">
-              <b>◈ Plan a project</b><small>Turn an idea into a plan</small>
+
+            <button data-prompt="Create a project plan for my idea">
+              <span>▣</span>
+              <strong>Plan a project</strong>
+              <small>Turn an idea into a plan</small>
             </button>
-            <button data-prompt="Give me 5 creative ideas for a new technology project.">
-              <b>✧ Explore ideas</b><small>Discover new possibilities</small>
+
+            <button data-prompt="Help me create a professional document">
+              <span>▤</span>
+              <strong>Create a document</strong>
+              <small>Write and organize content</small>
             </button>
+
           </div>
+
         </div>
 
-        <div id="chat" class="messages"></div>
+        <div id="chat" class="chat-messages"
+          aria-live="polite"></div>
+
       </section>
 
-      <section class="composer-wrap">
-        <div id="filePreview" class="file-preview" hidden></div>
+      <!-- CODE STUDIO -->
+      <section id="codeView" class="view">
 
-        <div class="mode-row">
-          <label for="modeSelect">MODE</label>
-          <select id="modeSelect">
-            <option value="chat">AI Chat</option>
-            <option value="code">Code Assistant</option>
-            <option value="agent">AI Agent Planner</option>
-            <option value="document">Document Assistant</option>
-            <option value="image">Image Generation</option>
+        <div class="section-heading">
+          <h1>⌘ Code Studio</h1>
+          <p>Write, understand and improve code with AI.</p>
+        </div>
+
+        <div class="studio-toolbar">
+
+          <select id="codeLanguage">
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+            <option value="html">HTML</option>
+            <option value="css">CSS</option>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="java">Java</option>
+            <option value="typescript">TypeScript</option>
+            <option value="php">PHP</option>
+            <option value="sql">SQL</option>
           </select>
-          <span class="privacy-note">Do not share passwords or private keys</span>
+
+          <button id="generateCodeBtn">Generate Code</button>
+          <button id="downloadCodeBtn">Download</button>
+
         </div>
 
-        <form id="chatForm" class="composer">
-          <input type="file" id="fileInput" hidden
-            accept=".txt,.md,.csv,.json,.html,.css,.js,.py,.java,.c,.cpp,.pdf,.docx">
+        <textarea id="codeEditor"
+          spellcheck="false"
+          placeholder="// Write your code here..."></textarea>
 
-          <button type="button" id="attachBtn" class="composer-icon" title="Attach file">＋</button>
-          <textarea id="userInput" rows="1" maxlength="20000"
-            placeholder="Message K-ULTRA AI..."></textarea>
-          <button type="button" id="micBtn" class="composer-icon" title="Voice input">🎤</button>
-          <button type="submit" id="sendBtn" class="send-button" title="Send">➤</button>
-          <button type="button" id="stopBtn" class="stop-button" hidden>Stop</button>
-        </form>
-        <p class="disclaimer">K-ULTRA AI can make mistakes. Verify important information.</p>
+        <div class="code-output">
+          <h3>AI Code Assistant</h3>
+          <div id="codeResult">Your generated code will appear here.</div>
+        </div>
+
+        <div class="code-prompt-area">
+          <input id="codePrompt"
+            placeholder="Describe the code you want to create...">
+          <button id="codeAskBtn">Ask AI</button>
+        </div>
+
       </section>
-    </main>
-  </div>
 
-  <script src="script.js" defer></script>
+      <!-- AI AGENT -->
+      <section id="agentView" class="view">
+
+        <div class="section-heading">
+          <h1>✧ AI Agent</h1>
+          <p>Plan projects and generate project files.</p>
+        </div>
+
+        <div class="agent-panel">
+
+          <label for="agentTask">Project Instructions</label>
+
+          <textarea id="agentTask"
+            placeholder="Describe your project, required features and technologies..."></textarea>
+
+          <div class="agent-options">
+
+            <select id="agentLanguage">
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="html">HTML/CSS/JS</option>
+            </select>
+
+            <button id="runAgentBtn">Start AI Agent</button>
+
+          </div>
+
+          <div id="agentStatus" aria-live="polite"></div>
+          <div id="agentResult"></div>
+
+        </div>
+
+      </section>
+
+      <!-- DOCUMENT STUDIO -->
+      <section id="documentView" class="view">
+
+        <div class="section-heading">
+          <h1>▤ Document Studio</h1>
+          <p>Read files and create documents.</p>
+        </div>
+
+        <div class="document-grid">
+
+          <div class="tool-card">
+            <h3>Read Documents</h3>
+            <p>Choose a supported document.</p>
+
+            <input id="documentInput" type="file"
+              accept=".txt,.md,.csv,.json,.pdf,.docx,.xlsx,.pptx">
+
+            <div id="documentPreview"></div>
+          </div>
+
+          <div class="tool-card">
+            <h3>Create Document</h3>
+
+            <input id="documentTitle"
+              placeholder="Document title">
+
+            <textarea id="documentContent"
+              placeholder="Write your document content..."></textarea>
+
+            <div class="button-row">
+              <button id="downloadTxtBtn">TXT</button>
+              <button id="downloadPdfBtn">PDF</button>
+              <button id="downloadDocxBtn">DOCX</button>
+            </div>
+
+          </div>
+
+          <div class="tool-card">
+            <h3>Spreadsheet</h3>
+
+            <textarea id="spreadsheetData"
+              placeholder="Enter comma-separated data..."></textarea>
+
+            <button id="downloadXlsxBtn">Download XLSX</button>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- IMAGE STUDIO -->
+      <section id="imageView" class="view">
+
+        <div class="section-heading">
+          <h1>▧ Image Studio</h1>
+          <p>Generate images from text descriptions.</p>
+        </div>
+
+        <div class="image-studio-panel">
+
+          <textarea id="imagePrompt"
+            placeholder="Describe the image you want to create..."></textarea>
+
+          <button id="generateImageBtn">Generate Image</button>
+
+          <div id="imageStatus" aria-live="polite"></div>
+
+          <div id="imageResult" class="image-result"></div>
+
+          <button id="downloadImageBtn" hidden>
+            Download Image
+          </button>
+
+        </div>
+
+      </section>
+
+      <!-- PROJECTS -->
+      <section id="projectsView" class="view">
+
+        <div class="section-heading">
+          <h1>▣ My Projects</h1>
+          <p>Your project workspace.</p>
+        </div>
+
+        <div id="projectsList" class="projects-list">
+          No projects created yet.
+        </div>
+
+      </section>
+
+      <!-- FILES -->
+      <section id="filesView" class="view">
+
+        <div class="section-heading">
+          <h1>▤ My Files</h1>
+          <p>Files created in this workspace.</p>
+        </div>
+
+        <div id="filesList" class="files-list">
+          No files available.
+        </div>
+
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="settingsView" class="view">
+
+        <div class="section-heading">
+          <h1>⚙ Settings</h1>
+          <p>Customize your K-ULTRA AI workspace.</p>
+        </div>
+
+        <div class="settings-panel">
+
+          <label for="settingsLanguage">Preferred Language</label>
+
+          <select id="settingsLanguage">
+            <option value="auto">Automatic</option>
+            <option value="en">English</option>
+            <option value="te">Telugu</option>
+            <option value="hi">Hindi</option>
+          </select>
+
+          <label>
+            <input id="voiceOutputToggle" type="checkbox" checked>
+            Enable AI Voice Output
+          </label>
+
+          <label>
+            <input id="soundToggle" type="checkbox">
+            Enable Interface Sounds
+          </label>
+
+          <button id="clearHistoryBtn">Clear Chat History</button>
+
+        </div>
+
+      </section>
+
+    </section>
+
+    <!-- CHAT COMPOSER -->
+    <footer id="composer" class="composer">
+
+      <div id="filePreview" class="file-preview" hidden></div>
+
+      <form id="chatForm" class="composer-form">
+
+        <input id="fileInput" type="file"
+          accept=".txt,.md,.csv,.json,.pdf,.docx,.xlsx,.pptx"
+          hidden>
+
+        <button type="button" id="attachBtn"
+          class="icon-btn" aria-label="Attach file">＋</button>
+
+        <textarea id="userInput"
+          rows="1"
+          placeholder="Message K-ULTRA AI..."
+          aria-label="Message K-ULTRA AI"></textarea>
+
+        <button type="button" id="micBtn"
+          class="icon-btn" aria-label="Voice input">🎤</button>
+
+        <button type="button" id="stopBtn"
+          class="icon-btn" hidden aria-label="Stop generation">■</button>
+
+        <button type="submit" id="sendBtn"
+          class="send-btn" aria-label="Send message">➤</button>
+
+      </form>
+
+      <div class="composer-footer">
+        <span>✧ K-ULTRA AI can make mistakes. Verify important information.</span>
+      </div>
+
+    </footer>
+
+  </main>
+
+</div>
+
+<!-- MOBILE SIDEBAR OVERLAY -->
+<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+<!-- NOTIFICATION -->
+<div id="toast" class="toast" role="status"></div>
+
+<!-- MAIN JAVASCRIPT -->
+<script src="script.js" defer></script>
+
 </body>
 </html>
