@@ -1,229 +1,107 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#080d25">
-
+  <meta name="description" content="K-ULTRA AI - Your intelligent AI assistant">
   <title>K-ULTRA AI</title>
+  <link rel="stylesheet" href="style.css">
 
-  <meta name="description" content="K-ULTRA AI - Your intelligent multilingual AI assistant.">
-
-  <link rel="stylesheet" href="style.css?v=31">
-
-  <!-- PDF and document readers -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-
-  <script src="script.js?v=30" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/mammoth@1.9.0/mammoth.browser.min.js"></script>
 </head>
-
 <body>
-<div id="app" class="app">
-
-  <!-- SIDEBAR -->
-  <aside id="sidebar" class="sidebar">
-
-    <div class="sidebar-header">
+  <div class="app" id="app">
+    <aside class="sidebar" id="sidebar">
       <div class="brand">
         <div class="brand-logo">K</div>
-        <div class="brand-text">
-          <h2>K-ULTRA AI</h2>
-          <span>Your AI Assistant</span>
-        </div>
-      </div>
-
-      <button id="sidebarToggle" class="icon-btn" type="button"
-        aria-label="Toggle sidebar">☰</button>
-    </div>
-
-    <button id="newChatBtn" class="new-chat-btn" type="button">
-      <span>＋</span>
-      <span>New Chat</span>
-    </button>
-
-    <div class="sidebar-search">
-      <input id="chatSearch" type="search"
-        placeholder="Search chats..." autocomplete="off">
-    </div>
-
-    <div class="sidebar-section">
-      <div class="section-title">YOUR CHATS</div>
-      <div id="chatSessions" class="chat-sessions"></div>
-    </div>
-
-    <div class="sidebar-bottom">
-      <button id="themeToggle" class="sidebar-action" type="button">
-        <span>◐</span>
-        <span>Change Theme</span>
-      </button>
-
-      <div class="sidebar-profile">
-        <div class="profile-logo">K</div>
         <div>
+          <h2>K-ULTRA AI</h2>
+          <small>Intelligence platform</small>
+        </div>
+      </div>
+
+      <button class="new-chat" id="newChatBtn">＋ New chat</button>
+
+      <input id="chatSearch" class="search" placeholder="Search chats...">
+      <div class="history-title">YOUR CHATS</div>
+      <div id="chatSessions" class="chat-sessions"></div>
+
+      <div class="sidebar-bottom">
+        <button id="themeToggle" class="side-button">☀️ Change theme</button>
+        <div class="version">K-ULTRA AI · Version 1.0</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="sidebarToggle" class="icon-button" aria-label="Toggle sidebar">☰</button>
+        <div class="top-brand">
+          <span class="mini-logo">K</span>
           <strong>K-ULTRA AI</strong>
-          <small>Personal AI Assistant</small>
+          <span class="online-dot"></span>
         </div>
-      </div>
-    </div>
-  </aside>
+        <button id="headerNewChat" class="icon-button" title="New chat">＋</button>
+      </header>
 
-  <!-- MAIN AREA -->
-  <main class="main-area">
+      <section class="chat-area" id="chatArea">
+        <div id="welcome" class="welcome">
+          <div class="welcome-logo">K</div>
+          <p class="eyebrow">YOUR AI WORKSPACE</p>
+          <h1>Welcome to <span>K-ULTRA AI</span></h1>
+          <p class="welcome-subtitle">Ask, create, learn and build something amazing.</p>
 
-    <header class="topbar">
-      <div class="topbar-left">
-
-        <button id="mobileMenuBtn" class="icon-btn mobile-menu-btn"
-          type="button" aria-label="Open menu">☰</button>
-
-        <div class="topbar-brand">
-          <span class="topbar-logo">K</span>
-          <span>K-ULTRA AI</span>
-        </div>
-
-        <span class="online-status">
-          <span class="status-dot"></span>
-          AI Assistant
-        </span>
-      </div>
-
-      <div class="topbar-actions">
-        <button id="exportChatBtn" class="icon-btn"
-          type="button" title="Export chat">⇩</button>
-
-        <button id="themeToggleTop" class="icon-btn"
-          type="button" title="Change theme">◐</button>
-      </div>
-    </header>
-
-    <!-- CHAT AREA -->
-    <section id="chat" class="chat-area">
-
-      <div id="welcome" class="welcome-screen">
-        <div class="welcome-logo">K</div>
-
-        <h1>Welcome to <span>K-ULTRA AI</span></h1>
-
-        <p>
-          Your intelligent AI assistant.
-          Ask anything, create images, write documents,
-          learn new things and explore ideas.
-        </p>
-
-        <div id="suggestions" class="suggestions">
-
-          <button class="suggestion-card" type="button"
-            data-prompt="Explain artificial intelligence in simple words">
-            <span>✦</span>
-            <strong>Learn Something</strong>
-            <small>Understand any topic easily</small>
-          </button>
-
-          <button class="suggestion-card" type="button"
-            data-prompt="Help me write a professional email">
-            <span>✉</span>
-            <strong>Write Something</strong>
-            <small>Create emails and documents</small>
-          </button>
-
-          <button class="suggestion-card" type="button"
-            data-prompt="Write a simple HTML website code">
-            <span>⌘</span>
-            <strong>Write Code</strong>
-            <small>Build and improve projects</small>
-          </button>
-
-          <button class="suggestion-card" type="button"
-            data-prompt="Create an image of a beautiful futuristic city">
-            <span>▧</span>
-            <strong>Create Images</strong>
-            <small>Turn ideas into images</small>
-          </button>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- COMPOSER -->
-    <footer class="composer-area">
-
-      <div id="filePreview" class="file-preview" hidden></div>
-
-      <!-- ATTACHMENT MENU -->
-      <div id="attachMenu" class="attach-menu" hidden>
-        <button id="photoBtn" type="button">🖼️ Upload image</button>
-        <button id="cameraBtn" type="button">📷 Take photo</button>
-        <button id="filesBtn" type="button">📎 Upload document</button>
-      </div>
-
-      <input id="photoInput" type="file"
-        accept="image/*" hidden>
-
-      <input id="cameraInput" type="file"
-        accept="image/*" capture="environment" hidden>
-
-      <input id="fileInput" type="file"
-        accept=".txt,.md,.csv,.pdf,.docx,.xlsx,.pptx"
-        hidden>
-
-      <form id="chatForm" class="chat-form">
-
-        <div class="composer-toolbar">
-          <button id="attachBtn" class="tool-btn"
-            type="button" title="Attach file">＋</button>
-
-          <span class="composer-hint">
-            Ask K-ULTRA AI anything
-          </span>
-        </div>
-
-        <textarea id="userInput" rows="1"
-          placeholder="Message K-ULTRA AI..."
-          autocomplete="off"
-          aria-label="Message K-ULTRA AI"></textarea>
-
-        <div class="composer-bottom">
-
-          <div class="composer-tools">
-            <button id="micBtn" class="tool-btn"
-              type="button" title="Voice input">🎤</button>
-            <span class="tool-label">Voice</span>
-
-            <button id="imageBtn" class="tool-btn"
-              type="button" title="Create image">🎨</button>
-          </div>
-
-          <div class="send-controls">
-            <button id="stopBtn" class="stop-btn"
-              type="button" hidden>Stop</button>
-
-            <button id="sendBtn" class="send-btn"
-              type="submit" aria-label="Send message">➤</button>
+          <div id="suggestions" class="suggestions">
+            <button data-prompt="Explain artificial intelligence in simple Telugu and English.">
+              <b>✦ Learn something</b><small>Explain a topic clearly</small>
+            </button>
+            <button data-prompt="Write a professional Python program with explanation.">
+              <b>⌘ Build with code</b><small>Generate and explain code</small>
+            </button>
+            <button data-prompt="Give me a professional project plan for a modern AI application.">
+              <b>◈ Plan a project</b><small>Turn an idea into a plan</small>
+            </button>
+            <button data-prompt="Give me 5 creative ideas for a new technology project.">
+              <b>✧ Explore ideas</b><small>Discover new possibilities</small>
+            </button>
           </div>
         </div>
-      </form>
 
-      <p class="disclaimer">
-        K-ULTRA AI can make mistakes. Verify important information.
-      </p>
-    </footer>
+        <div id="chat" class="messages"></div>
+      </section>
 
-  </main>
-</div>
+      <section class="composer-wrap">
+        <div id="filePreview" class="file-preview" hidden></div>
 
-<!-- IMAGE VIEWER -->
-<div id="imageViewer" class="image-viewer" hidden>
-  <button id="closeImageViewer" type="button"
-    class="viewer-close" aria-label="Close image">✕</button>
+        <div class="mode-row">
+          <label for="modeSelect">MODE</label>
+          <select id="modeSelect">
+            <option value="chat">AI Chat</option>
+            <option value="code">Code Assistant</option>
+            <option value="agent">AI Agent Planner</option>
+            <option value="document">Document Assistant</option>
+            <option value="image">Image Generation</option>
+          </select>
+          <span class="privacy-note">Do not share passwords or private keys</span>
+        </div>
 
-  <img id="viewerImage" src="" alt="Generated image">
+        <form id="chatForm" class="composer">
+          <input type="file" id="fileInput" hidden
+            accept=".txt,.md,.csv,.json,.html,.css,.js,.py,.java,.c,.cpp,.pdf,.docx">
 
-  <a id="downloadImageBtn" href="#"
-    download="k-ultra-image.png">Download Image</a>
-</div>
+          <button type="button" id="attachBtn" class="composer-icon" title="Attach file">＋</button>
+          <textarea id="userInput" rows="1" maxlength="20000"
+            placeholder="Message K-ULTRA AI..."></textarea>
+          <button type="button" id="micBtn" class="composer-icon" title="Voice input">🎤</button>
+          <button type="submit" id="sendBtn" class="send-button" title="Send">➤</button>
+          <button type="button" id="stopBtn" class="stop-button" hidden>Stop</button>
+        </form>
+        <p class="disclaimer">K-ULTRA AI can make mistakes. Verify important information.</p>
+      </section>
+    </main>
+  </div>
 
+  <script src="script.js" defer></script>
 </body>
 </html>
