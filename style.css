@@ -984,3 +984,12 @@ textarea:focus-visible {
     animation-duration: .01ms !important;
   }
 }
+
+/* VERSION 30 - MOBILE SIDEBAR CLOSE BUTTON FIX */
+
+@media (max-width: 650px) {
+  .sidebar-header > .icon-btn {
+    display: block !important;
+    flex-shrink: 0;
+  }
+}
